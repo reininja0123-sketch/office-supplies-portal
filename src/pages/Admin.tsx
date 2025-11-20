@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Package, ShoppingBag, Pencil, Trash2, Plus } from "lucide-react";
+import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Product {
@@ -196,6 +196,100 @@ const Admin = () => {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['Name', 'Description', 'Price', 'Stock Quantity', 'SKU', 'Image URL', 'Low Stock Threshold'];
+    const csvData = products.map(p => [
+      p.name,
+      p.description || '',
+      p.price,
+      p.stock_quantity,
+      p.sku,
+      p.image_url || '',
+      p.low_stock_threshold
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export successful",
+      description: `Exported ${products.length} products to CSV`,
+    });
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n');
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        
+        const productsToImport = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          const values = lines[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
+          
+          if (values.length >= 5) {
+            productsToImport.push({
+              name: values[0],
+              description: values[1] || '',
+              price: parseFloat(values[2]) || 0,
+              stock_quantity: parseInt(values[3]) || 0,
+              sku: values[4],
+              image_url: values[5] || '',
+              low_stock_threshold: parseInt(values[6]) || 10,
+            });
+          }
+        }
+        
+        if (productsToImport.length === 0) {
+          toast({
+            title: "No products to import",
+            description: "The CSV file appears to be empty or invalid",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const { error } = await supabase.from("products").insert(productsToImport);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Import successful",
+          description: `Imported ${productsToImport.length} products`,
+        });
+        
+        fetchProducts();
+      } catch (error: any) {
+        toast({
+          title: "Import failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -226,26 +320,44 @@ const Admin = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Product Management</CardTitle>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      onClick={() => {
-                        setEditingProduct(null);
-                        setFormData({
-                          name: "",
-                          description: "",
-                          price: "",
-                          stock_quantity: "",
-                          sku: "",
-                          image_url: "",
-                          low_stock_threshold: "10",
-                        });
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Product
-                    </Button>
-                  </DialogTrigger>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={exportToCSV}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <label htmlFor="csv-import" className="cursor-pointer">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import CSV
+                      <input
+                        id="csv-import"
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={handleImportCSV}
+                      />
+                    </label>
+                  </Button>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        onClick={() => {
+                          setEditingProduct(null);
+                          setFormData({
+                            name: "",
+                            description: "",
+                            price: "",
+                            stock_quantity: "",
+                            sku: "",
+                            image_url: "",
+                            low_stock_threshold: "10",
+                          });
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Product
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>
@@ -349,6 +461,7 @@ const Admin = () => {
                     </form>
                   </DialogContent>
                 </Dialog>
+              </div>
               </CardHeader>
               <CardContent>
                 <Table>
