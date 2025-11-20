@@ -123,44 +123,91 @@ const Store = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Procurement Store</h1>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/cart")}
-            className="relative"
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Cart
-            {cartItemCount > 0 && (
-              <Badge className="ml-2 absolute -top-2 -right-2">
-                {cartItemCount}
-              </Badge>
-            )}
-          </Button>
+      {/* Top Navigation Bar */}
+      <div className="bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 py-2 flex justify-between items-center text-sm">
+          <div className="flex gap-4">
+            <span>Procurement Service - PhilGEPS</span>
+          </div>
+          <div className="flex gap-4">
+            <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
+              Login
+            </Button>
+            <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
+              Admin
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <header className="border-b bg-background sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <Package className="h-10 w-10 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold">Procurement Service</h1>
+                <p className="text-sm text-muted-foreground">Philippine Government Electronic Procurement System</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/cart")}
+              className="relative"
+              size="lg"
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Cart
+              {cartItemCount > 0 && (
+                <Badge className="ml-2 absolute -top-2 -right-2 bg-destructive">
+                  {cartItemCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
+      {/* Breadcrumb */}
+      <div className="bg-muted/30 border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Home</span>
+            <span>/</span>
+            <span>What We Sell</span>
+            <span>/</span>
+            <span className="text-foreground font-medium">Common Use Items</span>
+          </div>
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Common Use Items</h2>
-          <p className="text-muted-foreground">
-            Browse our catalog of procurement supplies
+        {/* Page Title Section */}
+        <div className="mb-8 pb-6 border-b">
+          <h2 className="text-4xl font-bold mb-3 text-primary">Common Use Items</h2>
+          <p className="text-lg text-muted-foreground max-w-3xl">
+            Browse our comprehensive catalog of government procurement supplies. All items are pre-approved for common use and comply with PhilGEPS standards.
           </p>
         </div>
 
+        {/* Products Grid */}
         {products.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No products available</p>
+          <div className="text-center py-16 bg-muted/20 rounded-lg">
+            <Package className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
+            <p className="text-muted-foreground mb-6">
+              Products will be displayed here once they are added to the inventory.
+            </p>
+            <Button onClick={() => navigate("/admin")} variant="outline">
+              Go to Admin Panel
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map((product) => (
-              <Card key={product.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="aspect-square bg-muted rounded-md mb-4 flex items-center justify-center overflow-hidden">
+              <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                <CardHeader className="p-0">
+                  <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
@@ -168,40 +215,78 @@ const Store = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Package className="h-16 w-16 text-muted-foreground" />
+                      <Package className="h-20 w-20 text-muted-foreground" />
                     )}
                   </div>
-                  <CardTitle className="line-clamp-1">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {product.description}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold">
-                      ₱{product.price.toFixed(2)}
-                    </span>
-                    <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
-                      {product.stock_quantity > 0
-                        ? `${product.stock_quantity} in stock`
-                        : "Out of stock"}
-                    </Badge>
+                <div className="p-4 flex flex-col flex-1">
+                  <div className="mb-4">
+                    <CardTitle className="line-clamp-2 mb-2 text-lg">{product.name}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm">
+                      {product.description}
+                    </CardDescription>
+                    <p className="text-xs text-muted-foreground mt-2">SKU: {product.sku}</p>
                   </div>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full"
-                    onClick={() => addToCart(product)}
-                    disabled={product.stock_quantity === 0}
-                  >
-                    Add to Cart
-                  </Button>
-                </CardFooter>
+                  <CardContent className="flex-1 p-0 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-primary">
+                        ₱{product.price.toFixed(2)}
+                      </span>
+                      <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
+                        {product.stock_quantity > 0
+                          ? `${product.stock_quantity} units`
+                          : "Out of stock"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="p-0">
+                    <Button
+                      className="w-full"
+                      onClick={() => addToCart(product)}
+                      disabled={product.stock_quantity === 0}
+                      size="lg"
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Cart
+                    </Button>
+                  </CardFooter>
+                </div>
               </Card>
             ))}
           </div>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-muted/50 border-t mt-16">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="font-bold mb-3">About Procurement Service</h3>
+              <p className="text-sm text-muted-foreground">
+                Providing quality common use supplies and services to government agencies through the Philippine Government Electronic Procurement System.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-3">Quick Links</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Button variant="link" className="h-auto p-0" onClick={() => navigate("/")}>Home</Button></li>
+                <li><Button variant="link" className="h-auto p-0" onClick={() => navigate("/cart")}>Shopping Cart</Button></li>
+                <li><Button variant="link" className="h-auto p-0" onClick={() => navigate("/admin")}>Admin Panel</Button></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold mb-3">Contact Information</h3>
+              <p className="text-sm text-muted-foreground">
+                For inquiries about procurement services and product availability.
+              </p>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
+            <p>© 2025 Procurement Service - PhilGEPS. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
