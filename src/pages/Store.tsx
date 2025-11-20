@@ -9,6 +9,7 @@ import { ShoppingCart, Package, Grid3x3, LogOut, LogIn, Search } from "lucide-re
 import { useNavigate } from "react-router-dom";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import ProductDetailModal from "@/components/ProductDetailModal";
+import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 interface Product {
   id: string;
@@ -415,80 +416,14 @@ const Store = () => {
           </div>
         </div>
 
-        {/* Featured Products Section */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-primary">Featured Products</h3>
-              <p className="text-muted-foreground">Popular items and special offers</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.slice(0, 4).map((product) => (
-              <Card key={product.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-all border-primary/20">
-                <Badge className="absolute top-2 right-2 z-10 bg-primary">Featured</Badge>
-                <CardHeader className="p-0">
-                  <div 
-                    className="aspect-square bg-muted flex items-center justify-center overflow-hidden cursor-pointer group"
-                    onClick={() => handleImageClick(product)}
-                  >
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                      />
-                    ) : (
-                      <Package className="h-16 w-16 text-muted-foreground" />
-                    )}
-                    {product.stock_quantity === 0 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-white font-bold">OUT OF STOCK</span>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="mb-4">
-                    <CardTitle className="line-clamp-2 mb-2 text-lg">{product.name}</CardTitle>
-                    <CardDescription className="line-clamp-2 text-sm">
-                      {product.description}
-                    </CardDescription>
-                  </div>
-                  <CardContent className="flex-1 p-0 mb-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primary">
-                        ₱{product.price.toFixed(2)}
-                      </span>
-                      <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
-                        {product.stock_quantity > 0
-                          ? `${product.stock_quantity} units`
-                          : "Out of stock"}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-0">
-                    <div className="w-full space-y-3">
-                      <QuantitySelector
-                        maxQuantity={product.stock_quantity}
-                        onQuantityChange={(qty) => setProductQuantities({ ...productQuantities, [product.id]: qty })}
-                      />
-                      <Button
-                        className="w-full"
-                        onClick={() => addToCart(product, productQuantities[product.id] || 1)}
-                        disabled={product.stock_quantity === 0}
-                        size="lg"
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
+        {/* Featured Products Carousel */}
+        <FeaturedCarousel
+          products={products}
+          onProductClick={handleImageClick}
+          onAddToCart={addToCart}
+          productQuantities={productQuantities}
+          setProductQuantities={setProductQuantities}
+        />
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Category Sidebar */}
