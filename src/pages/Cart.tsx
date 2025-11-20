@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -180,7 +181,19 @@ const Cart = () => {
                   <Button
                     className="w-full"
                     size="lg"
-                    onClick={() => navigate("/checkout")}
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) {
+                        toast({
+                          title: "Authentication Required",
+                          description: "Please sign in or create an account to proceed with checkout.",
+                          variant: "destructive",
+                        });
+                        navigate("/auth");
+                        return;
+                      }
+                      navigate("/checkout");
+                    }}
                   >
                     Proceed to Checkout
                   </Button>
