@@ -26,6 +26,7 @@ interface CartItem {
 const Checkout = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -35,7 +36,18 @@ const Checkout = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
+    checkUserAndLoadCart();
+  }, [navigate]);
+
+  const checkUserAndLoadCart = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setUserId(user.id);
+    const cartKey = `cart_${user.id}`;
+    const savedCart = localStorage.getItem(cartKey);
     if (savedCart) {
       const parsedCart = JSON.parse(savedCart);
       if (parsedCart.length === 0) {
@@ -45,7 +57,7 @@ const Checkout = () => {
     } else {
       navigate("/cart");
     }
-  }, [navigate]);
+  };
 
   const total = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -114,7 +126,10 @@ const Checkout = () => {
       });
 
       // Clear cart
-      localStorage.removeItem("cart");
+      if (userId) {
+        const cartKey = `cart_${userId}`;
+        localStorage.removeItem(cartKey);
+      }
 
       toast({
         title: "Order placed successfully!",

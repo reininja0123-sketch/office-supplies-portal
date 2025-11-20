@@ -23,23 +23,39 @@ interface CartItem {
 
 const Cart = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    loadCart();
+    checkUser();
   }, []);
 
+  useEffect(() => {
+    if (userId) {
+      loadCart();
+    }
+  }, [userId]);
+
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUserId(user?.id || null);
+  };
+
   const loadCart = () => {
-    const savedCart = localStorage.getItem("cart");
+    if (!userId) return;
+    const cartKey = `cart_${userId}`;
+    const savedCart = localStorage.getItem(cartKey);
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     }
   };
 
   const updateCart = (newCart: CartItem[]) => {
+    if (!userId) return;
     setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
+    const cartKey = `cart_${userId}`;
+    localStorage.setItem(cartKey, JSON.stringify(newCart));
   };
 
   const removeFromCart = (productId: string) => {

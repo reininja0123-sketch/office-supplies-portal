@@ -108,6 +108,7 @@ const Store = () => {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setIsAuthenticated(!!user);
+    setUserId(user?.id || null);
   };
 
   const handleLogout = async () => {
