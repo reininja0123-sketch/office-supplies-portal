@@ -280,6 +280,13 @@ const Admin = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get order details for email notification
+      const { data: order } = await supabase
+        .from("orders")
+        .select("user_email, user_name, total_amount")
+        .eq("id", orderId)
+        .single();
+      
       const { error } = await supabase
         .from("orders")
         .update({
@@ -290,6 +297,24 @@ const Admin = () => {
         .eq("id", orderId);
 
       if (error) throw error;
+
+      // Send approval email notification
+      if (order) {
+        try {
+          await supabase.functions.invoke("send-order-approval", {
+            body: {
+              orderId,
+              userEmail: order.user_email,
+              userName: order.user_name,
+              totalAmount: order.total_amount,
+              status: newStatus,
+            },
+          });
+        } catch (emailError) {
+          console.error("Failed to send email notification:", emailError);
+          // Don't throw - order was still updated successfully
+        }
+      }
       
       toast({
         title: "Order updated",

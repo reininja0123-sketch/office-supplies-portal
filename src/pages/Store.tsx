@@ -9,7 +9,7 @@ import { ShoppingCart, Package, Grid3x3, LogOut, LogIn, Search } from "lucide-re
 import { useNavigate } from "react-router-dom";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import ProductDetailModal from "@/components/ProductDetailModal";
-import { FeaturedCarousel } from "@/components/FeaturedCarousel";
+
 
 interface Product {
   id: string;
@@ -423,14 +423,6 @@ const Store = () => {
           </div>
         </div>
 
-        {/* Featured Products Carousel */}
-        <FeaturedCarousel
-          products={products}
-          onProductClick={handleImageClick}
-          onAddToCart={addToCart}
-          productQuantities={productQuantities}
-          setProductQuantities={setProductQuantities}
-        />
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Category Sidebar */}
