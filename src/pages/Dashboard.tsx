@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Download, Package, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Download, Package, ShoppingBag, FileDown, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 interface Order {
@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [orderItems, setOrderItems] = useState<{ [key: string]: OrderItem[] }>({});
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,7 +70,8 @@ const Dashboard = () => {
         .eq("role", "admin")
         .maybeSingle();
 
-      const isAdmin = !!roleData;
+      const adminStatus = !!roleData;
+      setIsAdmin(adminStatus);
 
       // If admin, fetch all orders; otherwise, fetch only user's orders
       let query = supabase
@@ -77,7 +79,7 @@ const Dashboard = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!isAdmin) {
+      if (!adminStatus) {
         query = query.eq("user_email", email);
       }
 
@@ -215,6 +217,59 @@ const Dashboard = () => {
     });
   };
 
+  const exportToCSV = async () => {
+    try {
+      // Fetch all order items for the orders
+      const orderIds = orders.map(o => o.id);
+      const { data: allItems } = await supabase
+        .from("order_items")
+        .select(`
+          *,
+          products (
+            name,
+            sku
+          )
+        `)
+        .in("order_id", orderIds);
+
+      // Create CSV content
+      let csv = "Order ID,Order Date,Customer Name,Customer Email,Status,Product Name,SKU,Quantity,Price,Subtotal,Order Total\n";
+      
+      orders.forEach(order => {
+        const items = allItems?.filter(item => item.order_id === order.id) || [];
+        
+        if (items.length === 0) {
+          csv += `${order.id.slice(0, 8)},${new Date(order.created_at).toLocaleDateString()},${order.user_name},${order.user_email},${order.status},-,-,0,0,0,${order.total_amount}\n`;
+        } else {
+          items.forEach((item: any) => {
+            const subtotal = item.quantity * item.price;
+            csv += `${order.id.slice(0, 8)},${new Date(order.created_at).toLocaleDateString()},${order.user_name},${order.user_email},${order.status},${item.products.name},${item.products.sku},${item.quantity},${item.price},${subtotal},${order.total_amount}\n`;
+          });
+        }
+      });
+
+      // Download CSV
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export successful",
+        description: "Orders have been exported to CSV",
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export orders",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
@@ -251,8 +306,23 @@ const Dashboard = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Store
           </Button>
-          <h1 className="text-2xl font-bold">My Orders</h1>
-          <div className="w-24"></div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">My Orders</h1>
+            {isAdmin && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Viewing All Orders
+              </Badge>
+            )}
+          </div>
+          <div>
+            {isAdmin && orders.length > 0 && (
+              <Button variant="outline" onClick={exportToCSV}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
