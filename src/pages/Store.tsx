@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Package, Grid3x3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -102,6 +103,12 @@ const Store = () => {
       setLoading(false);
     }
   };
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.sku.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find((item) => item.product.id === product.id);
@@ -225,6 +232,17 @@ const Store = () => {
           <p className="text-lg text-muted-foreground max-w-3xl">
             Browse our comprehensive catalog of government procurement supplies. All items are pre-approved for common use and comply with PhilGEPS standards.
           </p>
+          
+          {/* Search Bar */}
+          <div className="mt-6">
+            <Input
+              type="text"
+              placeholder="Search products by name, description, or SKU..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -277,16 +295,18 @@ const Store = () => {
               </div>
             )}
 
-            {products.length === 0 && !loading ? (
+            {filteredProducts.length === 0 && !loading ? (
               <div className="text-center py-16 bg-muted/20 rounded-lg">
                 <Package className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
                 <p className="text-muted-foreground mb-6">
-                  {selectedCategory 
-                    ? "No products found in this category."
-                    : "Products will be displayed here once they are added to the inventory."}
+                  {searchQuery
+                    ? `No products found matching "${searchQuery}".`
+                    : selectedCategory 
+                      ? "No products found in this category."
+                      : "Products will be displayed here once they are added to the inventory."}
                 </p>
-                {!selectedCategory && (
+                {!selectedCategory && !searchQuery && (
                   <Button onClick={() => navigate("/admin")} variant="outline">
                     Go to Admin Panel
                   </Button>
@@ -294,7 +314,7 @@ const Store = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
                     <CardHeader className="p-0">
                       <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
