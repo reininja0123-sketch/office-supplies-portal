@@ -57,10 +57,14 @@ const Checkout = () => {
     setLoading(true);
 
     try {
+      // Get current user if authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
+          user_id: user?.id || null,
           user_email: formData.email,
           user_name: formData.name,
           user_phone: formData.phone,

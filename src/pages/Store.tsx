@@ -37,6 +37,7 @@ const Store = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -44,6 +45,7 @@ const Store = () => {
     fetchCategories();
     fetchProducts();
     loadCartFromStorage();
+    checkAuth();
   }, []);
 
   useEffect(() => {
@@ -59,6 +61,11 @@ const Store = () => {
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     }
+  };
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsAuthenticated(!!user);
   };
 
   const fetchCategories = async () => {
@@ -174,12 +181,20 @@ const Store = () => {
             <span>Procurement Service - PhilGEPS</span>
           </div>
           <div className="flex gap-4">
-            <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
-              Login
-            </Button>
-            <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
-              Admin
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/dashboard")}>
+                  My Orders
+                </Button>
+                <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
+                  Admin
+                </Button>
+              </>
+            ) : (
+              <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
