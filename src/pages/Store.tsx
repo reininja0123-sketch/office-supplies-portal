@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Package, Grid3x3, LogOut, LogIn } from "lucide-react";
+import { ShoppingCart, Package, Grid3x3, LogOut, LogIn, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import ProductDetailModal from "@/components/ProductDetailModal";
@@ -39,8 +39,11 @@ const Store = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [productQuantities, setProductQuantities] = useState<{ [key: string]: number }>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,14 +113,52 @@ const Store = () => {
     const { data: { user } } = await supabase.auth.getUser();
     setIsAuthenticated(!!user);
     setUserId(user?.id || null);
+    
+    // Check if user is admin
+    if (user) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      setIsAdmin(!!roles);
+    }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
+    setIsAdmin(false);
+    setUserId(null);
+    setCart([]);
     toast({
       title: "Logged out successfully",
     });
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.trim().length > 0) {
+      const filtered = products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.sku.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchSuggestions(filtered.slice(0, 5));
+      setShowSuggestions(true);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (product: Product) => {
+    setSearchQuery(product.name);
+    setShowSuggestions(false);
+    handleImageClick(product);
   };
 
   const handleImageClick = (product: Product) => {
@@ -244,9 +285,11 @@ const Store = () => {
                 <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/dashboard")}>
                   My Orders
                 </Button>
-                <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
-                  Admin
-                </Button>
+                {isAdmin && (
+                  <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
+                    Admin
+                  </Button>
+                )}
                 <Button variant="link" size="sm" className="text-primary-foreground" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
@@ -316,15 +359,47 @@ const Store = () => {
             Browse our comprehensive catalog of government procurement supplies. All items are pre-approved for common use and comply with PhilGEPS standards.
           </p>
           
-          {/* Search Bar */}
-          <div className="mt-6">
+          {/* Search Bar with Autocomplete */}
+          <div className="mt-6 relative max-w-md">
             <Input
               type="text"
-              placeholder="Search products by name, description, or SKU..."
+              placeholder="Search products by name or SKU..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md"
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => searchQuery && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              className="pr-10"
             />
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <Card className="absolute top-full mt-1 w-full z-50 max-h-80 overflow-auto">
+                <CardContent className="p-2">
+                  {searchSuggestions.map((product) => (
+                    <div
+                      key={product.id}
+                      className="p-3 hover:bg-muted cursor-pointer rounded-md flex items-center gap-3"
+                      onClick={() => selectSuggestion(product)}
+                    >
+                      <div className="w-12 h-12 bg-muted rounded flex-shrink-0">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover rounded"
+                          />
+                        ) : (
+                          <Package className="w-full h-full p-2 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                      </div>
+                      <p className="font-semibold text-primary">₱{product.price.toFixed(2)}</p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
