@@ -58,9 +58,8 @@ const Store = () => {
   }, []);
 
   useEffect(() => {
-    if (userId) {
-      loadCartFromStorage();
-    }
+    // Load cart from storage for both authenticated and guest users
+    loadCartFromStorage();
   }, [userId]);
 
   useEffect(() => {
@@ -68,10 +67,9 @@ const Store = () => {
   }, [selectedCategory]);
 
   useEffect(() => {
-    if (userId) {
-      const cartKey = `cart_${userId}`;
-      localStorage.setItem(cartKey, JSON.stringify(cart));
-    }
+    // Save cart to storage for both authenticated and guest users
+    const cartKey = userId ? `cart_${userId}` : 'cart_guest';
+    localStorage.setItem(cartKey, JSON.stringify(cart));
   }, [cart, userId]);
 
   useEffect(() => {
@@ -112,8 +110,8 @@ const Store = () => {
   }, []);
 
   const loadCartFromStorage = () => {
-    if (!userId) return;
-    const cartKey = `cart_${userId}`;
+    // Load cart for both authenticated and guest users
+    const cartKey = userId ? `cart_${userId}` : 'cart_guest';
     const savedCart = localStorage.getItem(cartKey);
     if (savedCart) {
       setCart(JSON.parse(savedCart));
