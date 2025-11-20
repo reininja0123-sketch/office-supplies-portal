@@ -141,6 +141,12 @@ const Store = () => {
   };
 
   const handleLogout = async () => {
+    // Clear user-specific cart before logging out
+    if (userId) {
+      const cartKey = `cart_${userId}`;
+      localStorage.removeItem(cartKey);
+    }
+    
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setIsAdmin(false);
@@ -148,6 +154,7 @@ const Store = () => {
     setCart([]);
     toast({
       title: "Logged out successfully",
+      description: "Your cart has been cleared",
     });
   };
 
