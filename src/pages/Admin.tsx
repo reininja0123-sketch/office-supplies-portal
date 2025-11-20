@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download } from "lucide-react";
+import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ImageUpload } from "@/components/ImageUpload";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Product {
   id: string;
@@ -57,6 +60,12 @@ const Admin = () => {
     sku: "",
     image_url: "",
     low_stock_threshold: "10",
+    category_id: "",
+  });
+
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -92,10 +101,22 @@ const Admin = () => {
       setIsAdmin(true);
       fetchProducts();
       fetchOrders();
+      fetchCategories();
     } catch (error) {
       navigate("/");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (!error && data) {
+      setCategories(data);
     }
   };
 
@@ -132,6 +153,7 @@ const Admin = () => {
       sku: formData.sku,
       image_url: formData.image_url,
       low_stock_threshold: parseInt(formData.low_stock_threshold),
+      category_id: formData.category_id || null,
     };
 
     try {
@@ -160,6 +182,7 @@ const Admin = () => {
         sku: "",
         image_url: "",
         low_stock_threshold: "10",
+        category_id: "",
       });
       fetchProducts();
     } catch (error: any) {
@@ -181,6 +204,7 @@ const Admin = () => {
       sku: product.sku,
       image_url: product.image_url || "",
       low_stock_threshold: product.low_stock_threshold.toString(),
+      category_id: product.category_id || "",
     });
     setIsDialogOpen(true);
   };
@@ -199,6 +223,86 @@ const Admin = () => {
     } else {
       toast({ title: "Product deleted successfully" });
       fetchProducts();
+    }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingCategory) {
+        const { error } = await supabase
+          .from("categories")
+          .update(categoryFormData)
+          .eq("id", editingCategory.id);
+        
+        if (error) throw error;
+        toast({ title: "Category updated successfully" });
+      } else {
+        const { error } = await supabase
+          .from("categories")
+          .insert([categoryFormData]);
+        
+        if (error) throw error;
+        toast({ title: "Category created successfully" });
+      }
+      
+      setIsCategoryDialogOpen(false);
+      setEditingCategory(null);
+      setCategoryFormData({ name: "", description: "" });
+      fetchCategories();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Are you sure? Products in this category will be uncategorized.")) return;
+    
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Category deleted successfully" });
+      fetchCategories();
+    }
+  };
+
+  const handleApproveOrder = async (orderId: string, newStatus: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          status: newStatus,
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id,
+        })
+        .eq("id", orderId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Order updated",
+        description: `Order status changed to ${newStatus}`,
+      });
+      
+      fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -319,6 +423,7 @@ const Admin = () => {
         <Tabs defaultValue="products">
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
           </TabsList>
 
@@ -357,6 +462,7 @@ const Admin = () => {
                             sku: "",
                             image_url: "",
                             low_stock_threshold: "10",
+                            category_id: "",
                           });
                         }}
                       >
@@ -451,13 +557,32 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="image_url">Image URL</Label>
-                        <Input
-                          id="image_url"
-                          type="url"
-                          value={formData.image_url}
-                          onChange={(e) =>
-                            setFormData({ ...formData, image_url: e.target.value })
+                        <Label htmlFor="category">Category</Label>
+                        <Select
+                          value={formData.category_id}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, category_id: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No Category</SelectItem>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Product Image</Label>
+                        <ImageUpload
+                          currentImage={formData.image_url}
+                          onImageUploaded={(url) =>
+                            setFormData({ ...formData, image_url: url })
                           }
                         />
                       </div>
@@ -486,7 +611,17 @@ const Admin = () => {
                         <TableCell>{product.sku}</TableCell>
                         <TableCell>{product.name}</TableCell>
                         <TableCell>₱{product.price.toFixed(2)}</TableCell>
-                        <TableCell>{product.stock_quantity}</TableCell>
+                        <TableCell>
+                          <span
+                            className={
+                              product.stock_quantity <= product.low_stock_threshold
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {product.stock_quantity}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -528,6 +663,7 @@ const Admin = () => {
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -540,10 +676,139 @@ const Admin = () => {
                         <TableCell>{order.user_email}</TableCell>
                         <TableCell>₱{order.total_amount.toFixed(2)}</TableCell>
                         <TableCell>
-                          <span className="capitalize">{order.status}</span>
+                          <Badge
+                            className={
+                              order.status === "pending"
+                                ? "bg-yellow-500"
+                                : order.status === "processing"
+                                ? "bg-blue-500"
+                                : order.status === "completed"
+                                ? "bg-green-500"
+                                : ""
+                            }
+                          >
+                            {order.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {new Date(order.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {order.status === "pending" && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveOrder(order.id, "processing")}
+                            >
+                              Approve
+                            </Button>
+                          )}
+                          {order.status === "processing" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleApproveOrder(order.id, "completed")}
+                            >
+                              Complete
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Category Management</CardTitle>
+                <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setEditingCategory(null);
+                        setCategoryFormData({ name: "", description: "" });
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Category
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingCategory ? "Edit Category" : "Add New Category"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCategorySubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cat-name">Category Name</Label>
+                        <Input
+                          id="cat-name"
+                          required
+                          value={categoryFormData.name}
+                          onChange={(e) =>
+                            setCategoryFormData({ ...categoryFormData, name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cat-description">Description</Label>
+                        <Textarea
+                          id="cat-description"
+                          value={categoryFormData.description}
+                          onChange={(e) =>
+                            setCategoryFormData({ ...categoryFormData, description: e.target.value })
+                          }
+                        />
+                      </div>
+                      <Button type="submit" className="w-full">
+                        {editingCategory ? "Update Category" : "Add Category"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell>{category.description}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setCategoryFormData({
+                                  name: category.name,
+                                  description: category.description || "",
+                                });
+                                setIsCategoryDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteCategory(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
