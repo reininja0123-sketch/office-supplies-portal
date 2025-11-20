@@ -61,11 +61,27 @@ const Dashboard = () => {
 
   const fetchOrders = async (email: string) => {
     try {
-      const { data, error } = await supabase
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user?.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      const isAdmin = !!roleData;
+
+      // If admin, fetch all orders; otherwise, fetch only user's orders
+      let query = supabase
         .from("orders")
         .select("*")
-        .eq("user_email", email)
         .order("created_at", { ascending: false });
+
+      if (!isAdmin) {
+        query = query.eq("user_email", email);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setOrders(data || []);
