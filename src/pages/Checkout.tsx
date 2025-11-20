@@ -69,14 +69,25 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Get current user if authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get current user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw new Error("Authentication error. Please log in again.");
+      }
+      
+      if (!session || !session.user) {
+        throw new Error("You must be logged in to place an order");
+      }
+
+      console.log("Creating order for user:", session.user.id);
       
       // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
-          user_id: user?.id || null,
+          user_id: session.user.id,
           user_email: formData.email,
           user_name: formData.name,
           user_phone: formData.phone,
@@ -86,7 +97,10 @@ const Checkout = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Order creation error:", orderError);
+        throw orderError;
+      }
 
       // Create order items
       const orderItems = cart.map((item) => ({
