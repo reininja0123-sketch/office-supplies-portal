@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Package, Grid3x3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { QuantitySelector } from "@/components/QuantitySelector";
 
 interface Product {
   id: string;
@@ -38,6 +39,7 @@ const Store = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [productQuantities, setProductQuantities] = useState<{ [key: string]: number }>({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -154,40 +156,41 @@ const Store = () => {
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity: number = 1) => {
     const existingItem = cart.find((item) => item.product.id === product.id);
 
     if (existingItem) {
-      if (existingItem.quantity < product.stock_quantity) {
+      const newQuantity = existingItem.quantity + quantity;
+      if (newQuantity <= product.stock_quantity) {
         setCart(
           cart.map((item) =>
             item.product.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, quantity: newQuantity }
               : item
           )
         );
         toast({
           title: "Updated cart",
-          description: `${product.name} quantity increased`,
+          description: `${product.name} quantity updated to ${newQuantity}`,
         });
       } else {
         toast({
           title: "Out of stock",
-          description: "Cannot add more items than available",
+          description: `Only ${product.stock_quantity} items available`,
           variant: "destructive",
         });
       }
     } else {
-      if (product.stock_quantity > 0) {
-        setCart([...cart, { product, quantity: 1 }]);
+      if (product.stock_quantity >= quantity) {
+        setCart([...cart, { product, quantity }]);
         toast({
           title: "Added to cart",
-          description: `${product.name} added to cart`,
+          description: `${quantity} x ${product.name} added to cart`,
         });
       } else {
         toast({
           title: "Out of stock",
-          description: "This item is currently unavailable",
+          description: `Only ${product.stock_quantity} items available`,
           variant: "destructive",
         });
       }
@@ -402,15 +405,21 @@ const Store = () => {
                         </div>
                       </CardContent>
                       <CardFooter className="p-0">
-                        <Button
-                          className="w-full"
-                          onClick={() => addToCart(product)}
-                          disabled={product.stock_quantity === 0}
-                          size="lg"
-                        >
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Add to Cart
-                        </Button>
+                        <div className="w-full space-y-3">
+                          <QuantitySelector
+                            maxQuantity={product.stock_quantity}
+                            onQuantityChange={(qty) => setProductQuantities({ ...productQuantities, [product.id]: qty })}
+                          />
+                          <Button
+                            className="w-full"
+                            onClick={() => addToCart(product, productQuantities[product.id] || 1)}
+                            disabled={product.stock_quantity === 0}
+                            size="lg"
+                          >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Add to Cart
+                          </Button>
+                        </div>
                       </CardFooter>
                     </div>
                   </Card>

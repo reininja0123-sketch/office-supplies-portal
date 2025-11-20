@@ -31,6 +31,8 @@ interface Order {
   total_amount: number;
   status: string;
   created_at: string;
+  approved_at?: string;
+  approved_by?: string;
 }
 
 const Admin = () => {
@@ -38,8 +40,12 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 

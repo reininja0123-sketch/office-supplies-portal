@@ -79,6 +79,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string | null
           id: string
           status: string
@@ -89,6 +91,8 @@ export type Database = {
           user_phone: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           id?: string
           status?: string
@@ -99,6 +103,8 @@ export type Database = {
           user_phone?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           id?: string
           status?: string
