@@ -56,6 +56,43 @@ const Store = () => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
+  useEffect(() => {
+    // Subscribe to realtime product updates
+    const channel = supabase
+      .channel('product-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products'
+        },
+        (payload) => {
+          console.log('Product change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setProducts(prev => [payload.new as Product, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProducts(prev => 
+              prev.map(p => p.id === payload.new.id ? payload.new as Product : p)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+          
+          toast({
+            title: "Inventory Updated",
+            description: "Product information has been updated",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadCartFromStorage = () => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
