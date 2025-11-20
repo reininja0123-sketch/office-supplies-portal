@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Package, Grid3x3 } from "lucide-react";
+import { ShoppingCart, Package, Grid3x3, LogOut, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { QuantitySelector } from "@/components/QuantitySelector";
+import ProductDetailModal from "@/components/ProductDetailModal";
 
 interface Product {
   id: string;
@@ -40,6 +41,8 @@ const Store = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [productQuantities, setProductQuantities] = useState<{ [key: string]: number }>({});
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -105,6 +108,19 @@ const Store = () => {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setIsAuthenticated(!!user);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    toast({
+      title: "Logged out successfully",
+    });
+  };
+
+  const handleImageClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
   };
 
   const fetchCategories = async () => {
@@ -229,11 +245,21 @@ const Store = () => {
                 <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/admin")}>
                   Admin
                 </Button>
+                <Button variant="link" size="sm" className="text-primary-foreground" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </Button>
               </>
             ) : (
-              <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
-                Login
-              </Button>
+              <>
+                <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+                <Button variant="link" size="sm" className="text-primary-foreground" onClick={() => navigate("/auth")}>
+                  Sign Up
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -372,12 +398,15 @@ const Store = () => {
                 {filteredProducts.map((product) => (
                   <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
                     <CardHeader className="p-0">
-                      <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden cursor-pointer"
+                        onClick={() => handleImageClick(product)}
+                      >
                         {product.image_url ? (
                           <img
                             src={product.image_url}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                           />
                         ) : (
                           <Package className="h-20 w-20 text-muted-foreground" />
@@ -460,6 +489,13 @@ const Store = () => {
           </div>
         </div>
       </footer>
+
+      <ProductDetailModal
+        product={selectedProduct}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onAddToCart={addToCart}
+      />
     </div>
   );
 };
