@@ -21,6 +21,7 @@ interface Product {
   sku: string;
   image_url: string;
   category_id: string;
+  low_stock_threshold: number;
 }
 
 interface Order {
@@ -49,6 +50,7 @@ const Admin = () => {
     stock_quantity: "",
     sku: "",
     image_url: "",
+    low_stock_threshold: "10",
   });
 
   useEffect(() => {
@@ -123,6 +125,7 @@ const Admin = () => {
       stock_quantity: parseInt(formData.stock_quantity),
       sku: formData.sku,
       image_url: formData.image_url,
+      low_stock_threshold: parseInt(formData.low_stock_threshold),
     };
 
     try {
@@ -150,6 +153,7 @@ const Admin = () => {
         stock_quantity: "",
         sku: "",
         image_url: "",
+        low_stock_threshold: "10",
       });
       fetchProducts();
     } catch (error: any) {
@@ -170,6 +174,7 @@ const Admin = () => {
       stock_quantity: product.stock_quantity.toString(),
       sku: product.sku,
       image_url: product.image_url || "",
+      low_stock_threshold: product.low_stock_threshold.toString(),
     });
     setIsDialogOpen(true);
   };
@@ -233,6 +238,7 @@ const Admin = () => {
                           stock_quantity: "",
                           sku: "",
                           image_url: "",
+                          low_stock_threshold: "10",
                         });
                       }}
                     >
@@ -298,16 +304,33 @@ const Admin = () => {
                           />
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="sku">SKU</Label>
-                        <Input
-                          id="sku"
-                          required
-                          value={formData.sku}
-                          onChange={(e) =>
-                            setFormData({ ...formData, sku: e.target.value })
-                          }
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="sku">SKU</Label>
+                          <Input
+                            id="sku"
+                            required
+                            value={formData.sku}
+                            onChange={(e) =>
+                              setFormData({ ...formData, sku: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="low_stock_threshold">Low Stock Alert Threshold</Label>
+                          <Input
+                            id="low_stock_threshold"
+                            type="number"
+                            required
+                            value={formData.low_stock_threshold}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                low_stock_threshold: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="image_url">Image URL</Label>

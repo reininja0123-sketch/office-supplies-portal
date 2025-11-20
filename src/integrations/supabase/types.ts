@@ -84,6 +84,7 @@ export type Database = {
           status: string
           total_amount: number
           user_email: string
+          user_id: string | null
           user_name: string
           user_phone: string | null
         }
@@ -93,6 +94,7 @@ export type Database = {
           status?: string
           total_amount: number
           user_email: string
+          user_id?: string | null
           user_name: string
           user_phone?: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           status?: string
           total_amount?: number
           user_email?: string
+          user_id?: string | null
           user_name?: string
           user_phone?: string | null
         }
@@ -114,6 +117,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          low_stock_threshold: number
           name: string
           price: number
           sku: string
@@ -126,6 +130,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          low_stock_threshold?: number
           name: string
           price: number
           sku: string
@@ -138,6 +143,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          low_stock_threshold?: number
           name?: string
           price?: number
           sku?: string
@@ -198,6 +204,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_low_stock_products: {
+        Args: never
+        Returns: {
+          current_stock: number
+          product_id: string
+          product_name: string
+          threshold: number
+        }[]
+      }
+      get_admin_emails: {
+        Args: never
+        Returns: {
+          email: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
