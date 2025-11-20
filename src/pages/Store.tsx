@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Package } from "lucide-react";
+import { ShoppingCart, Package, Grid3x3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Product {
@@ -18,6 +18,12 @@ interface Product {
   category_id: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+}
+
 interface CartItem {
   product: Product;
   quantity: number;
@@ -25,15 +31,22 @@ interface CartItem {
 
 const Store = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchCategories();
     fetchProducts();
     loadCartFromStorage();
   }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory]);
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -46,12 +59,35 @@ const Store = () => {
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("products")
+        .from("categories")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to load categories",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      let query = supabase
+        .from("products")
+        .select("*");
+      
+      if (selectedCategory) {
+        query = query.eq("category_id", selectedCategory);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setProducts(data || []);
@@ -190,71 +226,126 @@ const Store = () => {
           </p>
         </div>
 
-        {/* Products Grid */}
-        {products.length === 0 ? (
-          <div className="text-center py-16 bg-muted/20 rounded-lg">
-            <Package className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
-            <p className="text-muted-foreground mb-6">
-              Products will be displayed here once they are added to the inventory.
-            </p>
-            <Button onClick={() => navigate("/admin")} variant="outline">
-              Go to Admin Panel
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                <CardHeader className="p-0">
-                  <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Package className="h-20 w-20 text-muted-foreground" />
-                    )}
-                  </div>
-                </CardHeader>
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="mb-4">
-                    <CardTitle className="line-clamp-2 mb-2 text-lg">{product.name}</CardTitle>
-                    <CardDescription className="line-clamp-2 text-sm">
-                      {product.description}
-                    </CardDescription>
-                    <p className="text-xs text-muted-foreground mt-2">SKU: {product.sku}</p>
-                  </div>
-                  <CardContent className="flex-1 p-0 mb-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primary">
-                        ₱{product.price.toFixed(2)}
-                      </span>
-                      <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
-                        {product.stock_quantity > 0
-                          ? `${product.stock_quantity} units`
-                          : "Out of stock"}
-                      </Badge>
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Category Sidebar */}
+          <aside className="lg:w-64 flex-shrink-0">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Grid3x3 className="h-5 w-5" />
+                  Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant={selectedCategory === null ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  All Products
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.id ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    {category.name}
+                  </Button>
+                ))}
+                {categories.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-2">
+                    No categories available
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Products Grid */}
+          <div className="flex-1">
+            {selectedCategory && (
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold">
+                  {categories.find(c => c.id === selectedCategory)?.name}
+                </h3>
+                <p className="text-muted-foreground">
+                  {categories.find(c => c.id === selectedCategory)?.description}
+                </p>
+              </div>
+            )}
+
+            {products.length === 0 && !loading ? (
+              <div className="text-center py-16 bg-muted/20 rounded-lg">
+                <Package className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
+                <p className="text-muted-foreground mb-6">
+                  {selectedCategory 
+                    ? "No products found in this category."
+                    : "Products will be displayed here once they are added to the inventory."}
+                </p>
+                {!selectedCategory && (
+                  <Button onClick={() => navigate("/admin")} variant="outline">
+                    Go to Admin Panel
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                    <CardHeader className="p-0">
+                      <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="h-20 w-20 text-muted-foreground" />
+                        )}
+                      </div>
+                    </CardHeader>
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="mb-4">
+                        <CardTitle className="line-clamp-2 mb-2 text-lg">{product.name}</CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm">
+                          {product.description}
+                        </CardDescription>
+                        <p className="text-xs text-muted-foreground mt-2">SKU: {product.sku}</p>
+                      </div>
+                      <CardContent className="flex-1 p-0 mb-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-2xl font-bold text-primary">
+                            ₱{product.price.toFixed(2)}
+                          </span>
+                          <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
+                            {product.stock_quantity > 0
+                              ? `${product.stock_quantity} units`
+                              : "Out of stock"}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-0">
+                        <Button
+                          className="w-full"
+                          onClick={() => addToCart(product)}
+                          disabled={product.stock_quantity === 0}
+                          size="lg"
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Add to Cart
+                        </Button>
+                      </CardFooter>
                     </div>
-                  </CardContent>
-                  <CardFooter className="p-0">
-                    <Button
-                      className="w-full"
-                      onClick={() => addToCart(product)}
-                      disabled={product.stock_quantity === 0}
-                      size="lg"
-                    >
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      Add to Cart
-                    </Button>
-                  </CardFooter>
-                </div>
-              </Card>
-            ))}
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </main>
 
       {/* Footer */}
