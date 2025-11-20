@@ -339,19 +339,21 @@ const Store = () => {
                 <p className="text-sm text-muted-foreground">Philippine Government Electronic Procurement System</p>
               </div>
             </div>
-            <Button
-              onClick={() => navigate("/cart")}
-              className="relative"
-              size="lg"
-            >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Cart
-              {cartItemCount > 0 && (
-                <Badge className="ml-2 absolute -top-2 -right-2 bg-destructive">
-                  {cartItemCount}
-                </Badge>
-              )}
-            </Button>
+            {isAuthenticated && (
+              <Button
+                onClick={() => navigate("/cart")}
+                className="relative"
+                size="lg"
+              >
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Cart
+                {cartItemCount > 0 && (
+                  <Badge className="ml-2 absolute -top-2 -right-2 bg-destructive">
+                    {cartItemCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </header>
