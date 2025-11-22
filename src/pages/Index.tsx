@@ -1,7 +1,7 @@
 import Store from "./Store";
 
 const Index = () => {
-  return <Store />;
+    return <Store />;
 };
 
 export default Index;
