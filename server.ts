@@ -1,6 +1,10 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import crypto from 'crypto'; // Native Node module for UUIDs
+// import crypto from 'crypto'; // Native Node module for UUIDs
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import pool from './src/db';
 import { Product, Category, Order, LowStockProduct } from './src/integrations/dao/types';
 
@@ -10,6 +14,30 @@ const port = 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        // Generate unique filename: timestamp-random.ext
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
 // 1. PRODUCT ROUTES (Store & Admin)
@@ -418,6 +446,24 @@ app.get('/products/low-stock', async (req: Request, res: Response) => {
         if (conn) conn.release();
     }
 });
+
+
+// ==========================================
+// 4. Image Upload
+// ==========================================
+app.post('/upload', upload.single('image'), (req: Request, res: Response) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Construct the public URL
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+    res.json({ url: fileUrl });
+});
+
 
 // Start Server
 app.listen(port, () => {

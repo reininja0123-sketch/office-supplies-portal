@@ -72,9 +72,6 @@ const Store = () => {
         localStorage.setItem(cartKey, JSON.stringify(cart));
     }, [cart, userId]);
 
-    // Removed Supabase Realtime Subscription (Not supported natively in standard MariaDB setup)
-    // You would implement polling or WebSockets (Socket.io) here for a real equivalent.
-
     const loadCartFromStorage = () => {
         const cartKey = userId ? `cart_${userId}` : 'cart_guest';
         const savedCart = localStorage.getItem(cartKey);

@@ -110,19 +110,36 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 // API Client
 // ============================================================================
 export const api = {
-    get: <T>(endpoint: string) => request<T>(endpoint, { method: "GET" }),
+    get: <T>(endpoint: string, categoryFormData: { name: string; description: string; }) => request<T>(endpoint, { method: "GET" }),
 
     post: <T>(endpoint: string, data: any) => request<T>(endpoint, { method: "POST", data }),
 
     put: <T>(endpoint: string, data: any) => request<T>(endpoint, { method: "PUT", data }),
 
     delete: <T>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
+
+    upload: async (endpoint: string, file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // We do NOT set Content-Type header here;
+        // the browser sets it automatically with the correct boundary for FormData
+        const res = await fetch(`${BASE_URL}${endpoint}`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || `Upload failed: ${res.statusText}`);
+        }
+        return res.json();
+    },
 };
 
 // ============================================================================
 // Mock Authentication Helper
 // ============================================================================
-// Since we removed Supabase Auth, we use LocalStorage to simulate a session.
 
 const STORAGE_KEY = "procurement_user_session";
 

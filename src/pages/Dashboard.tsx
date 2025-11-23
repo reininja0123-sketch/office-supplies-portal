@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Download, Package, ShoppingBag, FileDown, Users, DollarSign, TrendingUp, Clock } from "lucide-react";
 import { api, auth } from "@/lib/api";
 
-// Local User interface since we aren't using Supabase types anymore
 interface User {
     id: string;
     email: string;

@@ -524,27 +524,25 @@ const Admin = () => {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="category">Category {formData}</Label>
-                                                    <Select value={formData.category_id}></Select>
-
-                                                    {/*<Select*/}
-                                                    {/*    value={formData.category_id}*/}
-                                                    {/*    onValueChange={(value) =>*/}
-                                                    {/*        setFormData({ ...formData, category_id: value })*/}
-                                                    {/*    }*/}
-                                                    {/*>*/}
-                                                    {/*    <SelectTrigger>*/}
-                                                    {/*        <SelectValue placeholder="Select category (optional)" />*/}
-                                                    {/*    </SelectTrigger>*/}
-                                                    {/*    <SelectContent>*/}
-                                                    {/*        <SelectItem value="">No Category</SelectItem>*/}
-                                                    {/*        {categories.map((cat) => (*/}
-                                                    {/*            <SelectItem key={cat.id} value={cat.id}>*/}
-                                                    {/*                {cat.name}*/}
-                                                    {/*            </SelectItem>*/}
-                                                    {/*        ))}*/}
-                                                    {/*    </SelectContent>*/}
-                                                    {/*</Select>*/}
+                                                    <Label htmlFor="category">Category</Label>
+                                                    <Select
+                                                        value={formData.category_id}
+                                                        onValueChange={(value) =>
+                                                            setFormData({ ...formData, category_id: value })
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select category (optional)" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="none">No Category</SelectItem>
+                                                            {categories.map((cat) => (
+                                                                <SelectItem key={cat.id} value={cat.id}>
+                                                                    {cat.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Product Image</Label>
