@@ -9,7 +9,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import Admin from "./pages/Admin";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

@@ -86,7 +86,7 @@ const Store = () => {
         const user = auth.getUser();
         setIsAuthenticated(!!user);
         setUserId(user?.id || null);
-        if (user && user.role === 'admin') {
+        if (user && (user.role === 'superadmin' || user.role === 'admin')) {
             setIsAdmin(true);
         }
     };
@@ -262,10 +262,102 @@ const Store = () => {
                 </div>
             </div>
 
-            {/* ... Copy the Header, Breadcrumb, Search, and Grid JSX from original file ... */}
+            <header className="border-b bg-background sticky top-0 z-10 shadow-sm">
+                <div className="container mx-auto px-4 py-6">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <Package className="h-10 w-10 text-primary" />
+                            <div>
+                                <h1 className="text-2xl font-bold">Procurement Service</h1>
+                                <p className="text-sm text-muted-foreground">Philippine Government Electronic Procurement System</p>
+                            </div>
+                        </div>
+                        {isAuthenticated && (
+                            <Button
+                                onClick={() => navigate("/cart")}
+                                className="relative"
+                                size="lg"
+                            >
+                                <ShoppingCart className="mr-2 h-5 w-5" />
+                                Cart
+                                {cartItemCount > 0 && (
+                                    <Badge className="ml-2 absolute -top-2 -right-2 bg-destructive">
+                                        {cartItemCount}
+                                    </Badge>
+                                )}
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </header>
+
+            {/* Breadcrumb */}
+            <div className="bg-muted/30 border-b">
+                <div className="container mx-auto px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Home</span>
+                        <span>/</span>
+                        <span>What We Sell</span>
+                        <span>/</span>
+                        <span className="text-foreground font-medium">Common Use Items</span>
+                    </div>
+                </div>
+            </div>
 
             <main className="container mx-auto px-4 py-8">
-                {/* ... JSX Content ... */}
+
+                {/* Page Title Section */}
+                <div className="mb-8 pb-6 border-b">
+                    <h2 className="text-4xl font-bold mb-6 text-primary">Common Use Items</h2>
+                    <p className="text-lg text-muted-foreground max-w-6xl">
+                        Browse our comprehensive catalog of government procurement supplies. All items are pre-approved for common use and comply with PhilGEPS standards.
+                    </p>
+
+                    {/* Search Bar with Autocomplete */}
+                    <div className="mt-6 relative max-w-md">
+                        <Input
+                            type="text"
+                            placeholder="Search products by name or SKU..."
+                            value={searchQuery}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            onFocus={() => searchQuery && setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            className="pr-10"
+                        />
+                        {showSuggestions && searchSuggestions.length > 0 && (
+                            <Card className="absolute top-full mt-1 w-full z-50 max-h-80 overflow-auto">
+                                <CardContent className="p-2">
+                                    {searchSuggestions.map((product) => (
+                                        <div
+                                            key={product.id}
+                                            className="p-3 hover:bg-muted cursor-pointer rounded-md flex items-center gap-3"
+                                            onClick={() => selectSuggestion(product)}
+                                        >
+                                            <div className="w-12 h-12 bg-muted rounded flex-shrink-0">
+                                                {product.image_url ? (
+                                                    <img
+                                                        src={product.image_url}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover rounded"
+                                                    />
+                                                ) : (
+                                                    <Package className="w-full h-full p-2 text-muted-foreground" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-medium text-sm">{product.name}</p>
+                                                <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                                            </div>
+                                            <p className="font-semibold text-primary">₱{product.price.toFixed(2)}</p>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+
+
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar */}
                     <aside className="lg:w-64 flex-shrink-0">
@@ -331,9 +423,9 @@ const Store = () => {
                                         </div>
                                         <CardContent className="flex-1 p-0 mb-4">
                                             <div className="flex justify-between items-center">
-                          <span className="text-2xl font-bold text-primary">
-                            ₱{product.price.toFixed(2)}
-                          </span>
+                                                  <span className="text-2xl font-bold text-primary">
+                                                    ₱{product.price.toFixed(2)}
+                                                  </span>
                                                 <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
                                                     {product.stock_quantity > 0
                                                         ? `${product.stock_quantity} units`

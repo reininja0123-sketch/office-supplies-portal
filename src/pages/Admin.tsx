@@ -9,47 +9,29 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download, FolderOpen } from "lucide-react";
+import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api, auth } from "@/lib/api"; // Updated Import
+import { api, auth } from "@/lib/api";
 
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    stock_quantity: number;
-    sku: string;
-    image_url: string;
-    category_id: string;
-    low_stock_threshold: number;
-}
-
-interface Order {
-    id: string;
-    user_email: string;
-    user_name: string;
-    total_amount: number;
-    status: string;
-    created_at: string;
-    approved_at?: string;
-    approved_by?: string;
-}
+import { User, Product, Order } from '@/integrations/dao/types';
 
 const Admin = () => {
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false)
+    const [isSuperadmin, setIsSuperadmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([])
+    const [users, setUsers] = useState<User[]>([]);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<any>(null);
     const { toast } = useToast();
     const navigate = useNavigate();
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -81,7 +63,7 @@ const Admin = () => {
             }
 
             // Check role from local session (set in Auth.tsx)
-            if (user.role !== 'admin') {
+            if ((user.role !== 'admin' && user.role !== 'superadmin')) {
                 toast({
                     title: "Access Denied",
                     description: "You do not have admin privileges",
@@ -91,7 +73,13 @@ const Admin = () => {
                 return;
             }
 
+            if (user.role === 'superadmin') {
+                fetchUsers();
+                setIsSuperadmin(true);
+            }
+
             setIsAdmin(true);
+            setCurrentUserEmail(user.email);
             fetchProducts();
             fetchOrders();
             fetchCategories();
@@ -127,6 +115,47 @@ const Admin = () => {
             setOrders(data || []);
         } catch (error) {
             console.error("Failed to fetch orders");
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const data = await api.get<User[]>('/users');
+            setUsers(data || []);
+        } catch (error) {
+            console.error("Failed to fetch users");
+            toast({
+                title: "Error",
+                description: "Failed to load users",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleUpdateUserRole = async (userId: string, newRole: string) => {
+        try {
+            const data =  await api.patch(`/users/${userId}/role`, { role: newRole });
+            
+            if (data.message === 'SUCCESS') {
+                toast({
+                    title: "Role Updated",
+                    description: `User role changed to ${newRole}`,
+                });
+                // Refresh list to show change
+                fetchUsers();
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to update user Please report to dev to fix",
+                    variant: "destructive",
+                });
+            }
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update role",
+                variant: "destructive",
+            });
         }
     };
 
@@ -274,15 +303,12 @@ const Admin = () => {
     };
 
     const exportToCSV = () => {
-        const headers = ['Name', 'Description', 'Price', 'Stock Quantity', 'SKU', 'Image URL', 'Low Stock Threshold'];
+        const headers = ['Name', 'Description', 'Price', 'Stock Quantity'];
         const csvData = products.map(p => [
             p.name,
             p.description || '',
             p.price,
-            p.stock_quantity,
-            p.sku,
-            p.image_url || '',
-            p.low_stock_threshold
+            p.stock_quantity
         ]);
 
         const csvContent = [
@@ -383,6 +409,7 @@ const Admin = () => {
                     <Button variant="outline" onClick={() => navigate("/")}>
                         Back to Store
                     </Button>
+
                 </div>
             </header>
 
@@ -392,8 +419,10 @@ const Admin = () => {
                         <TabsTrigger value="products">Products</TabsTrigger>
                         <TabsTrigger value="categories">Categories</TabsTrigger>
                         <TabsTrigger value="orders">Orders</TabsTrigger>
+                        {isSuperadmin && (
+                        <TabsTrigger value="users">Users</TabsTrigger>
+                        )}
                     </TabsList>
-
                     <TabsContent value="products">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
@@ -784,6 +813,73 @@ const Admin = () => {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {isSuperadmin && (
+                    <TabsContent value="users">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>User Management</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Full Name</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>Joined</TableHead>
+                                            <TableHead>Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {users.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell>{user.email}</TableCell>
+                                                <TableCell>{user.full_name}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
+                                                        {user.role.toUpperCase()}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {new Date(user.created_at).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <Select
+                                                            disabled={user.email === currentUserEmail} // Prevent editing self
+                                                            defaultValue={user.role}
+                                                            onValueChange={(val) => handleUpdateUserRole(user.id, val)}
+                                                        >
+                                                            <SelectTrigger className="w-[120px]">
+                                                                <SelectValue placeholder="Select role" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="user">
+                                                                    <div className="flex items-center">
+                                                                        <UserIcon className="mr-2 h-4 w-4" />
+                                                                        User
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="admin">
+                                                                    <div className="flex items-center">
+                                                                        <Shield className="mr-2 h-4 w-4" />
+                                                                        Admin
+                                                                    </div>
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    )}
+
                 </Tabs>
             </main>
         </div>

@@ -7,6 +7,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import pool from './src/db';
 import { Product, Category, Order, LowStockProduct } from './src/integrations/dao/types';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 const port = 3000;
@@ -38,6 +39,223 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// POST Register (Standard User)
+app.post('/auth/register', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const { email, password, full_name } = req.body;
+
+        // Check 'users' table
+        const existing = await conn.query("SELECT id FROM users WHERE email = ?", [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ error: "Email already exists" });
+        }
+
+        const id = crypto.randomUUID();
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        await conn.beginTransaction();
+
+        // 1. Create User
+        await conn.query(
+            "INSERT INTO users (id, email, full_name, password_hash) VALUES (?, ?, ?, ?)",
+            [id, email, full_name, passwordHash]
+        );
+
+        // 2. Assign 'user' role
+        await conn.query(
+            "INSERT INTO user_roles (id, user_id, role) VALUES (UUID(), ?, 'user')",
+            [id]
+        );
+
+        await conn.commit();
+        res.status(201).json({ message: "Registration successful" });
+
+    } catch (err: any) {
+        if (conn) await conn.rollback();
+        console.error(err);
+        res.status(500).json({ error: "Registration failed" });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// POST Login
+app.post('/auth/login', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const { email, password } = req.body;
+
+        // Join 'users' with 'user_roles'
+        const rows = await conn.query(`
+            SELECT u.*, ur.role 
+            FROM users u 
+            LEFT JOIN user_roles ur ON u.id = ur.user_id 
+            WHERE u.email = ?
+        `, [email]);
+
+        if (rows.length === 0) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        const user = rows[0];
+
+        if (!user.password_hash) {
+            return res.status(401).json({ error: "Invalid credentials (no password set)" });
+        }
+
+        const match = await bcrypt.compare(password, user.password_hash);
+        if (!match) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // Return user info
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name,
+                role: user.role || 'user'
+            }
+        });
+
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: "Login failed" });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// POST Create New Admin
+app.post('/auth/create-admin', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const { requester_id, email, password, full_name } = req.body;
+
+        // 1. Verify Requester is Admin
+        const adminCheck = await conn.query(
+            "SELECT role FROM user_roles WHERE user_id = ? AND role = 'admin'",
+            [requester_id]
+        );
+
+        if (adminCheck.length === 0) {
+            return res.status(403).json({ error: "Unauthorized. Only admins can create new admins." });
+        }
+
+        // 2. Create New Admin in 'users' table
+        const existing = await conn.query("SELECT id FROM users WHERE email = ?", [email]);
+        if (existing.length > 0) return res.status(400).json({ error: "Email exists" });
+
+        const id = crypto.randomUUID();
+        const hash = await bcrypt.hash(password, 10);
+
+        await conn.beginTransaction();
+
+        await conn.query(
+            "INSERT INTO users (id, email, full_name, password_hash) VALUES (?, ?, ?, ?)",
+            [id, email, full_name, hash]
+        );
+
+        await conn.query(
+            "INSERT INTO user_roles (id, user_id, role) VALUES (UUID(), ?, 'admin')",
+            [id]
+        );
+
+        await conn.commit();
+
+        res.json({ message: "New Admin created successfully" });
+
+    } catch (err: any) {
+        if (conn) await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// ==========================================
+// USER MANAGEMENT ROUTES (Admin)
+// ==========================================
+
+// GET All Users
+app.get('/users', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        // Join users with user_roles to get the role
+        const query = `
+      SELECT u.id, u.email, u.full_name, u.created_at, ur.role
+      FROM users u
+      LEFT JOIN user_roles ur ON u.id = ur.user_id
+      WHERE ur.role <> 'superadmin'
+      ORDER BY u.created_at DESC
+    `;
+        const rows = await conn.query(query);
+        const users = rows.slice(0, rows.length);
+        res.json(users);
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// PUT  User Role
+app.put('/users/:id/role', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const { role } = req.body; // 'admin' or 'user'
+        const userId = req.params.id;
+
+        // Using ON DUPLICATE KEY UPDATE logic just in case, though usually row exists
+        await conn.query(
+            `INSERT INTO user_roles (id, user_id, role) 
+       VALUES (UUID(), ?, ?) 
+       ON DUPLICATE KEY UPDATE role = ?`,
+            [userId, role, role]
+        );
+
+        res.json({ message: 'User role updated' });
+    } catch (err: any) {
+        console.error("Error updating role:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// UPDATE  User Role
+app.patch('/users/:id/role', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        console.log("conn " + conn);
+        const { role } = req.body; // 'admin' or 'user'
+        const userId = req.params.id;
+
+        console.log("role " + role);
+        console.log("userId " + userId);
+
+        await conn.query(
+            `UPDATE user_roles set role = ? WHERE id = ?`,
+            [role, userId]
+        );
+
+        res.json({ message: 'SUCCESS' });
+    } catch (err: any) {
+        console.error("Error updating role:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (conn) conn.release();
+    }
+});
 
 // ==========================================
 // 1. PRODUCT ROUTES (Store & Admin)

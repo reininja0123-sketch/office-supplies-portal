@@ -7,20 +7,22 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Download, Package, ShoppingBag, FileDown, Users, DollarSign, TrendingUp, Clock } from "lucide-react";
 import { api, auth } from "@/lib/api";
 
-interface User {
-    id: string;
-    email: string;
-    role?: string;
-}
+import { Order, User } from '@/integrations/dao/types';
 
-interface Order {
-    id: string;
-    user_email: string;
-    user_name: string;
-    total_amount: number;
-    status: string;
-    created_at: string;
-}
+// interface User {
+//     id: string;
+//     email: string;
+//     role?: string;
+// }
+
+// interface Order {
+//     id: string;
+//     user_email: string;
+//     user_name: string;
+//     total_amount: number;
+//     status: string;
+//     created_at: string;
+// }
 
 interface OrderItem {
     id: string;

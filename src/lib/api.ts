@@ -62,6 +62,14 @@
 
 // The Vite proxy configured in vite.config.ts forwards '/api' to 'http://localhost:3000'
 const BASE_URL = "/api";
+const STORAGE_KEY = "procurement_user_session";
+
+export interface UserSession {
+    id: string;
+    email: string;
+    full_name?: string;
+    role: "admin" | "user";
+}
 
 interface RequestOptions extends RequestInit {
     data?: any;
@@ -110,11 +118,15 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 // API Client
 // ============================================================================
 export const api = {
-    get: <T>(endpoint: string, categoryFormData: { name: string; description: string; }) => request<T>(endpoint, { method: "GET" }),
+    // get: <T>(endpoint: string, categoryFormData: { name: string; description: string; }) => request<T>(endpoint, { method: "GET" }),
+
+    get: <T>(endpoint: string) => request<T>(endpoint, { method: "GET" }),
 
     post: <T>(endpoint: string, data: any) => request<T>(endpoint, { method: "POST", data }),
 
     put: <T>(endpoint: string, data: any) => request<T>(endpoint, { method: "PUT", data }),
+
+    patch: <T>(endpoint: string, data: any) => request<T>(endpoint, { method: "PATCH", data }),
 
     delete: <T>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
 
@@ -141,19 +153,9 @@ export const api = {
 // Mock Authentication Helper
 // ============================================================================
 
-const STORAGE_KEY = "procurement_user_session";
 
-export interface UserSession {
-    id: string;
-    email: string;
-    full_name?: string;
-    role: "admin" | "user";
-}
 
 export const auth = {
-    /**
-     * Get the current logged-in user from local storage
-     */
     getUser: (): UserSession | null => {
         const sessionStr = localStorage.getItem(STORAGE_KEY);
         if (!sessionStr) return null;
@@ -164,26 +166,34 @@ export const auth = {
         }
     },
 
-    /**
-     * test admin@local.com
-     * Simulate a sign-in.
-     * Logic: If email contains 'admin', grant admin role. Otherwise, user role.
-     */
-    signIn: async (email: string) => {
+    signIn: async (email: string, password: string) => {
         // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+            const response: any = await api.post('/auth/login', { email, password });
+            const user = response.user;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+            return { user, error: null };
+        } catch (err: any) {
+            return { user: null, error: err };
+        }
+    },
 
-        const isAdmin = email.toLowerCase().includes("admin");
+    signUp: async (email: string, password: string, fullName: string) => {
+        try {
+            await api.post('/auth/register', { email, password, full_name: fullName });
+            // Auto login after register? Or just return success.
+            // Let's just return success and make them login.
+            return { error: null };
+        } catch (err: any) {
+            return { error: err };
+        }
+    },
 
-        const mockUser: UserSession = {
-            id: crypto.randomUUID(), // Generate a fake User ID
-            email,
-            role: isAdmin ? "admin" : "user",
-            full_name: email.split("@")[0], // Mock name based on email
-        };
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-        return { user: mockUser, error: null };
+    // New function to create admin
+    createAdmin: async (requesterId: string, email: string, password: string, fullName: string) => {
+        return api.post('/auth/create-admin', {
+            requester_id: requesterId, email, password, full_name: fullName
+        });
     },
 
     /**

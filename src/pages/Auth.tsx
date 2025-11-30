@@ -20,32 +20,42 @@ const Auth = () => {
         e.preventDefault();
         setLoading(true);
 
-        try {
-            // In a real app, send password to backend.
-            // For this step, we just use our mock helper.
-            await auth.signIn(email);
+        const { user, error } = await auth.signIn(email, password);
 
-            toast({
-                title: "Welcome back!",
-                description: "Successfully signed in.",
-            });
-            navigate("/");
-        } catch (error: any) {
+        if (error) {
             toast({
                 title: "Error",
-                description: error.message,
+                description: error.message || "Invalid credentials",
                 variant: "destructive",
             });
-        } finally {
             setLoading(false);
+            return;
         }
+
+        toast({ title: "Welcome back!", description: "Successfully signed in." });
+        navigate("/");
+        setLoading(false);
+
     };
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // For now, sign up just logs you in directly in this local demo
-        await handleSignIn(e);
+
+        const { error } = await auth.signUp(email, password, fullName);
+
+        if (error) {
+            toast({
+                title: "Registration Failed",
+                description: error.message,
+                variant: "destructive",
+            });
+            setLoading(false);
+            return;
+        }
+
+        toast({ title: "Success!", description: "Account created. Please sign in." });
+        setLoading(false);
     };
 
     // ... (JSX REMAINS EXACTLY THE SAME)
@@ -71,7 +81,7 @@ const Auth = () => {
                                     <Input
                                         id="signin-email"
                                         type="email"
-                                        placeholder="admin@local.com"
+                                        placeholder="your@email.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
@@ -90,6 +100,7 @@ const Auth = () => {
                                 <Button type="submit" className="w-full" disabled={loading}>
                                     {loading ? "Signing in..." : "Sign In"}
                                 </Button>
+
                             </form>
                         </TabsContent>
                         {/* ... Signup Tab ... */}
@@ -106,9 +117,31 @@ const Auth = () => {
                                         required
                                     />
                                 </div>
-                                {/* ... other inputs ... */}
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="signup-email">Email</Label>
+                                    <Input
+                                        id="signup-email"
+                                        type="email"
+                                        placeholder="your@email.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="signup-password">Password</Label>
+                                    <Input
+                                        id="signup-password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
                                 <Button type="submit" className="w-full" disabled={loading}>
-                                    Sign Up
+                                    {loading ? "Creating account..." : "Sign Up"}
                                 </Button>
                             </form>
                         </TabsContent>

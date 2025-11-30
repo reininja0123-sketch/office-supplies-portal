@@ -82,3 +82,11 @@ export interface LowStockProduct {
     current_stock: number;
     threshold: number;
 }
+
+export interface User {
+    id: string;
+    email: string;
+    full_name: string;
+    role: "admin" | "user";
+    created_at: string;
+}
