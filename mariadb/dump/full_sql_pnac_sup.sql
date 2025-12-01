@@ -17,12 +17,71 @@
 /*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
 
 --
--- Current Database: `pnac_sup`
+-- Table structure for table `app_reference`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `pnac_sup` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
+DROP TABLE IF EXISTS `app_reference`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `app_reference` (
+  `id` char(36) NOT NULL DEFAULT uuid(),
+  `app_name` char(255) NOT NULL,
+  `app_value` char(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-USE `pnac_sup`;
+--
+-- Dumping data for table `app_reference`
+--
+
+LOCK TABLES `app_reference` WRITE;
+/*!40000 ALTER TABLE `app_reference` DISABLE KEYS */;
+set autocommit=0;
+INSERT INTO `app_reference` VALUES
+('21a22827-cdff-11f0-a43b-4c2338ce70c4','app_title','Office Supplies Portal','2025-11-30 15:13:34',NULL),
+('392173af-cdff-11f0-a43b-4c2338ce70c4','sign_in_title','Procurement Store','2025-11-30 15:14:13',NULL),
+('832a7452-cdff-11f0-a43b-4c2338ce70c4','store_header','Procurement Service','2025-11-30 15:16:17',NULL),
+('832b6439-cdff-11f0-a43b-4c2338ce70c4','store_sub_header','Philippine Government Electronic Procurement System','2025-11-30 15:16:17',NULL),
+('832b6439-cdff-11f0-a43b-4c2338ce70c4','store_banner_label','Common Use Items','2025-11-30 15:16:17',NULL),
+('832b9283-cdff-11f0-a43b-4c2338ce70c4','store_banner_desc','Browse our comprehensive catalog of government procurement supplies. All items are pre-approved for common use and comply with PhilGEPS standards.','2025-11-30 15:16:17',NULL);
+/*!40000 ALTER TABLE `app_reference` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
+
+--
+-- Table structure for table `audit`
+--
+
+DROP TABLE IF EXISTS `audit`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `trans_type` varchar(20) NOT NULL,
+  `trans_table` varchar(20) NOT NULL,
+  `trans_action` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `transaction_by` char(36) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `audit`
+--
+
+LOCK TABLES `audit` WRITE;
+/*!40000 ALTER TABLE `audit` DISABLE KEYS */;
+set autocommit=0;
+INSERT INTO `audit` VALUES
+(1,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,admin,user','2025-12-01 08:13:45','00000000-0000-0000-0000-000000000001'),
+(2,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,user,admin','2025-12-01 08:13:59','00000000-0000-0000-0000-000000000001'),
+(3,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,admin,user','2025-12-01 08:14:12','00000000-0000-0000-0000-000000000001');
+/*!40000 ALTER TABLE `audit` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `categories`
@@ -116,6 +175,16 @@ CREATE TABLE `order_items` (
 LOCK TABLES `order_items` WRITE;
 /*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
 set autocommit=0;
+INSERT INTO `order_items` VALUES
+('4c688c48-db62-4716-983e-b8d765efb324','d28ade6f-ad02-4406-b4e1-7c3ea1d89664','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 15:00:16'),
+('574e33ef-6f39-45d6-aeee-99339cd3a34d','62830c9e-40ec-4d1e-ae3c-22013219bbc5','32ec96b9-0311-4d2e-b34a-e363b00d2632',1,848.35,'2025-11-30 10:58:09'),
+('9153167a-a318-4a82-85c4-f7cd016b6a67','9417e102-8ae7-4c06-a2ad-58737e83ade2','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 15:01:08'),
+('ce79a28a-60b3-4a68-94df-8b3e3e5f611d','62830c9e-40ec-4d1e-ae3c-22013219bbc5','470d31ad-a03a-4d33-9fc0-469dd781a969',1,11111.00,'2025-11-30 10:58:09'),
+('cf98f1cf-7c75-4865-acfa-048c21397787','ceffd1cf-e9ca-46e9-80f3-2d7b3ebca6d6','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 14:39:44'),
+('d227a2d8-a347-4629-997e-6ad23036bc7f','62830c9e-40ec-4d1e-ae3c-22013219bbc5','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 10:58:09'),
+('dfc3d9d6-57c7-45df-b279-018c1eea0bff','62830c9e-40ec-4d1e-ae3c-22013219bbc5','8a252d43-8733-4667-9c4e-7aa4a14f278e',1,179.04,'2025-11-30 10:58:09'),
+('e9072806-6ac2-4f88-804c-7826ead33090','20aa5ae7-f920-454b-953f-fff38428ae16','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 14:58:46'),
+('f7cff9f5-7687-4219-a0ae-c872252908d2','9870ee4f-1952-4799-9fbb-501880b61b8c','58ac22c2-5a25-4891-bf29-75195b3bd2cf',1,10000.00,'2025-11-30 14:58:16');
 /*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -153,6 +222,13 @@ CREATE TABLE `orders` (
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
 set autocommit=0;
+INSERT INTO `orders` VALUES
+('20aa5ae7-f920-454b-953f-fff38428ae16','bean@bean.com','Mr Bean','09271234567',10000.00,'completed','2025-11-30 14:58:46',NULL,'2025-11-30 14:58:58','798b75df-94c0-48cc-94e4-9e5f64befcf9'),
+('62830c9e-40ec-4d1e-ae3c-22013219bbc5','tsest@rtwew.com','test','21312312',22138.39,'completed','2025-11-30 10:58:09',NULL,'2025-11-30 13:05:46','00000000-0000-0000-0000-000000000001'),
+('9417e102-8ae7-4c06-a2ad-58737e83ade2','user@user.com','Mr Bean','09271234567',10000.00,'pending','2025-11-30 15:01:08',NULL,NULL,NULL),
+('9870ee4f-1952-4799-9fbb-501880b61b8c','bean@bean.com','Mr Bean','09271234567',10000.00,'completed','2025-11-30 14:58:16',NULL,'2025-11-30 14:58:30','798b75df-94c0-48cc-94e4-9e5f64befcf9'),
+('ceffd1cf-e9ca-46e9-80f3-2d7b3ebca6d6','bean@bean.com','Mr Bean','09271234567',10000.00,'completed','2025-11-30 14:39:44',NULL,'2025-11-30 14:39:53','798b75df-94c0-48cc-94e4-9e5f64befcf9'),
+('d28ade6f-ad02-4406-b4e1-7c3ea1d89664','user@user.com','Ordinary users','09271234567',10000.00,'pending','2025-11-30 15:00:16',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -245,16 +321,16 @@ LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
 set autocommit=0;
 INSERT INTO `products` VALUES
-('32ec96b9-0311-4d2e-b34a-e363b00d2632','Monitor 74','Eco-friendly',848.35,'33333333-3333-3333-3333-333333333333',186,'MON4679','https://example.com/images/MON4679.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',7),
-('457ab0fa-299a-43f4-b87d-6751a8b523b2','Printer 27','Latest model',346.27,'33333333-3333-3333-3333-333333333333',201,'PRI8424','https://example.com/images/PRI8424.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',18),
-('470d31ad-a03a-4d33-9fc0-469dd781a969','412321','wqeqweqweqw',11111.00,NULL,11,'TWEWE',NULL,'2025-11-22 16:09:58','2025-11-22 16:09:58',10),
-('4e2bd528-2fdf-4170-b8e5-beb29919a1b9','Laptop 9','Eco-friendly',508.87,'33333333-3333-3333-3333-333333333333',492,'LAP7069','https://example.com/images/LAP7069.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',15),
-('58ac22c2-5a25-4891-bf29-75195b3bd2cf','Nokia 3310','Indestructible and Holy phone of all ',10000.00,'db6a4fb1-03ab-4f86-ba15-3ff35d557424',989,'HAMMER','http://localhost:3000/uploads/1763907131133-232004057.png','2025-11-23 14:12:12','2025-11-23 14:13:53',100),
-('8a252d43-8733-4667-9c4e-7aa4a14f278e','Keyboard 44','High quality product',179.04,'33333333-3333-3333-3333-333333333333',51,'KEY2576','https://example.com/images/KEY2576.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',12),
-('98d89578-f982-46d1-8701-cf5d9551dff1','Camera 35','Compact design',313.52,'33333333-3333-3333-3333-333333333333',54,'CAM6154','https://example.com/images/CAM6154.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',19),
-('c04d2c4f-c4f2-466c-a7f8-3846051bd974','Router 56','Compact design',309.30,'33333333-3333-3333-3333-333333333333',107,'ROU3789','https://example.com/images/ROU3789.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',19),
-('ca6243e3-034a-475a-b9fb-9ce101f0aa52','Printer 78','Compact design',242.55,'33333333-3333-3333-3333-333333333333',109,'PRI4363','https://example.com/images/PRI4363.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',19),
-('d4fe2b64-7cb7-400e-83b3-da9e93961022','Router 28','Limited edition',612.40,'33333333-3333-3333-3333-333333333333',293,'ROU7026','https://example.com/images/ROU7026.jpg','2025-11-22 14:15:24','2025-11-22 15:33:41',17);
+('32ec96b9-0311-4d2e-b34a-e363b00d2632','Monitor 74','Eco-friendly',848.35,'33333333-3333-3333-3333-333333333333',185,'MON4679','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('457ab0fa-299a-43f4-b87d-6751a8b523b2','Printer 27','Latest model',346.27,'33333333-3333-3333-3333-333333333333',201,'PRI8424','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('470d31ad-a03a-4d33-9fc0-469dd781a969','412321','wqeqweqweqw',11111.00,NULL,120,'TWEWE',NULL,'2025-11-22 16:09:58','2025-11-30 13:04:28',30),
+('4e2bd528-2fdf-4170-b8e5-beb29919a1b9','Laptop 9','Eco-friendly',508.87,'33333333-3333-3333-3333-333333333333',492,'LAP7069','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('58ac22c2-5a25-4891-bf29-75195b3bd2cf','Nokia 3310','Indestructible and Holy phone of all ',10000.00,'db6a4fb1-03ab-4f86-ba15-3ff35d557424',983,'HAMMER','http://localhost:3000/uploads/1763907131133-232004057.png','2025-11-23 14:12:12','2025-11-30 15:01:08',30),
+('8a252d43-8733-4667-9c4e-7aa4a14f278e','Keyboard 44','High quality product',179.04,'33333333-3333-3333-3333-333333333333',120,'KEY2576','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('98d89578-f982-46d1-8701-cf5d9551dff1','Camera 35','Compact design',313.52,'33333333-3333-3333-3333-333333333333',54,'CAM6154','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('c04d2c4f-c4f2-466c-a7f8-3846051bd974','Router 56','Compact design',309.30,'33333333-3333-3333-3333-333333333333',107,'ROU3789','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('ca6243e3-034a-475a-b9fb-9ce101f0aa52','Printer 78','Compact design',242.55,'33333333-3333-3333-3333-333333333333',109,'PRI4363','','2025-11-22 14:15:24','2025-12-01 07:08:01',30),
+('d4fe2b64-7cb7-400e-83b3-da9e93961022','Router 28','Limited edition',612.40,'33333333-3333-3333-3333-333333333333',293,'ROU7026','','2025-11-22 14:15:24','2025-12-01 07:08:01',30);
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -303,6 +379,10 @@ CREATE TABLE `profiles` (
 LOCK TABLES `profiles` WRITE;
 /*!40000 ALTER TABLE `profiles` DISABLE KEYS */;
 set autocommit=0;
+INSERT INTO `profiles` VALUES
+('00000000-0000-0000-0000-000000000001','supplyofficer@admin.com','System Admin','2025-11-30 12:14:03'),
+('5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user@user.com','Ordinary user','2025-11-30 14:59:45'),
+('798b75df-94c0-48cc-94e4-9e5f64befcf9','dummy@admin.com','C John','2025-11-30 14:33:41');
 /*!40000 ALTER TABLE `profiles` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -378,7 +458,9 @@ DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles` (
   `id` char(36) NOT NULL DEFAULT uuid(),
   `user_id` char(36) NOT NULL,
-  `role` enum('admin','user') NOT NULL,
+  `role` enum('admin','user','superadmin') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`,`role`),
   CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -392,6 +474,10 @@ CREATE TABLE `user_roles` (
 LOCK TABLES `user_roles` WRITE;
 /*!40000 ALTER TABLE `user_roles` DISABLE KEYS */;
 set autocommit=0;
+INSERT INTO `user_roles` VALUES
+('0271fd84-cdfa-11f0-a43b-4c2338ce70c4','798b75df-94c0-48cc-94e4-9e5f64befcf9','admin','2025-11-30 15:09:05','2025-12-01 07:03:23'),
+('33a666d8-cdfd-11f0-a43b-4c2338ce70c4','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user','2025-11-30 15:09:05','2025-12-01 08:14:12'),
+('b2c459a3-cde6-11f0-a43b-4c2338ce70c4','00000000-0000-0000-0000-000000000001','superadmin','2025-11-30 15:09:05','2025-11-30 15:09:05');
 /*!40000 ALTER TABLE `user_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -407,7 +493,7 @@ CREATE TABLE `users` (
   `id` char(36) NOT NULL DEFAULT uuid(),
   `email` varchar(255) DEFAULT NULL,
   `full_name` varchar(255) DEFAULT NULL,
-  `password_hash` text NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
@@ -421,6 +507,10 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 set autocommit=0;
+INSERT INTO `users` VALUES
+('00000000-0000-0000-0000-000000000001','supplyofficer@admin.com','System Admin','$2a$12$B9it9UdCMuxnJ90MC/.pb.TNxvj/LLsquTYBq9Ek9IJDIsWvMMXg6','2025-11-30 12:14:03'),
+('5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user@user.com','Ordinary user','$2b$12$zSFwd9EwoR/bdKltEu7XO.IWKyBRGWJN0mKPF7X6eEcrfPYn6OoZS','2025-11-30 14:59:45'),
+('798b75df-94c0-48cc-94e4-9e5f64befcf9','dummy@admin.com','C John','$2a$12$ngdvJXwgFHpt/2BxUNctH.pOcqeQjbsVzVWjUIy/p8BcJOszpvnPq','2025-11-30 14:33:41');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -453,12 +543,6 @@ DELIMITER ;
 --
 -- Dumping routines for database 'pnac_sup'
 --
-
---
--- Current Database: `pnac_sup`
---
-
-USE `pnac_sup`;
 
 --
 -- Final view structure for view `get_admin_emails`
@@ -505,4 +589,4 @@ USE `pnac_sup`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2025-11-23 22:54:46
+-- Dump completed on 2025-12-01 19:51:00

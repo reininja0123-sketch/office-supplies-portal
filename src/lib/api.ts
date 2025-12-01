@@ -1,66 +1,3 @@
-// // Since we set up the Vite proxy in vite.config.ts, we can use relative paths
-// const BASE_URL = "/api";
-//
-// export const api = {
-//     get: async (endpoint: string) => {
-//         const res = await fetch(`${BASE_URL}${endpoint}`);
-//         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-//         return res.json();
-//     },
-//
-//     post: async (endpoint: string, data: any) => {
-//         const res = await fetch(`${BASE_URL}${endpoint}`, {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify(data),
-//         });
-//         if (!res.ok) {
-//             const err = await res.json();
-//             throw new Error(err.error || `API Error: ${res.statusText}`);
-//         }
-//         return res.json();
-//     },
-//
-//     put: async (endpoint: string, data: any) => {
-//         const res = await fetch(`${BASE_URL}${endpoint}`, {
-//             method: "PUT",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify(data),
-//         });
-//         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-//         return res.json();
-//     },
-//
-//     delete: async (endpoint: string) => {
-//         const res = await fetch(`${BASE_URL}${endpoint}`, {
-//             method: "DELETE",
-//         });
-//         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-//         return res.json();
-//     },
-// };
-//
-// // Simple mock auth helper (since we haven't built full JWT auth in backend yet)
-// export const auth = {
-//     getUser: () => {
-//         const user = localStorage.getItem("user_session");
-//         return user ? JSON.parse(user) : null;
-//     },
-//     signIn: async (email: string) => {
-//         // In a real app, this hits /api/login and gets a JWT
-//         const mockUser = { id: "user_123", email, role: email.includes("admin") ? "admin" : "user" };
-//         localStorage.setItem("user_session", JSON.stringify(mockUser));
-//         return { user: mockUser, error: null };
-//     },
-//     signOut: async () => {
-//         localStorage.removeItem("user_session");
-//     }
-// };
-
-
-// src/lib/api.ts
-
-// The Vite proxy configured in vite.config.ts forwards '/api' to 'http://localhost:3000'
 const BASE_URL = "/api";
 const STORAGE_KEY = "procurement_user_session";
 
@@ -149,12 +86,6 @@ export const api = {
     },
 };
 
-// ============================================================================
-// Mock Authentication Helper
-// ============================================================================
-
-
-
 export const auth = {
     getUser: (): UserSession | null => {
         const sessionStr = localStorage.getItem(STORAGE_KEY);
@@ -205,3 +136,14 @@ export const auth = {
         // localStorage.removeItem(`cart_${userId}`);
     }
 };
+
+export const audit = {
+    trail: async (query: string, action: object, table: string, userId: string) => {
+        try {
+            await api.put('/audit', { query, action, table, userId });
+            return { error: null };
+        } catch (err: any) {
+            return { error: err };
+        }
+    }
+}

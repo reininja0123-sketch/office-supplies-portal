@@ -206,7 +206,7 @@ app.get('/users', async (req: Request, res: Response) => {
     }
 });
 
-// PUT  User Role
+// PUT / UPDATE  User Role
 app.put('/users/:id/role', async (req: Request, res: Response) => {
     let conn;
     try {
@@ -217,8 +217,8 @@ app.put('/users/:id/role', async (req: Request, res: Response) => {
         // Using ON DUPLICATE KEY UPDATE logic just in case, though usually row exists
         await conn.query(
             `INSERT INTO user_roles (id, user_id, role) 
-       VALUES (UUID(), ?, ?) 
-       ON DUPLICATE KEY UPDATE role = ?`,
+                VALUES (UUID(), ?, ?) 
+                ON DUPLICATE KEY UPDATE role = ?`,
             [userId, role, role]
         );
 
@@ -240,11 +240,13 @@ app.patch('/users/:id/role', async (req: Request, res: Response) => {
         const { role } = req.body; // 'admin' or 'user'
         const userId = req.params.id;
 
-        console.log("role " + role);
-        console.log("userId " + userId);
+        // Validation
+        if (!['admin', 'user'].includes(role)) {
+            return res.status(400).json({ error: "Invalid role" });
+        }
 
         await conn.query(
-            `UPDATE user_roles set role = ? WHERE id = ?`,
+            `UPDATE user_roles set role = ? WHERE user_id = ?`,
             [role, userId]
         );
 
@@ -680,6 +682,41 @@ app.post('/upload', upload.single('image'), (req: Request, res: Response) => {
     const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     res.json({ url: fileUrl });
+});
+
+// ==========================================
+// 5. Audit Trail
+// ==========================================
+app.put('/audit', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        // await conn.beginTransaction();
+        const { query, action, table, userId } = req.body;
+
+        let desc = action;
+
+        if (query === 'UPDATE') {
+            const {
+                oldValue: oldValue,
+                newValue: newValue,
+                userId: userId
+            } = action;
+            desc = userId + ',' + oldValue + ',' + newValue;
+        }
+        console.log(">>>>> " + JSON.stringify(req.body));
+        await conn.query(
+            `INSERT INTO audit (trans_type, trans_table, trans_action, transaction_by)
+             VALUES (?, ?, ?, ?)`,
+            [query, table, desc, userId]
+        );
+        // await conn.commit();
+        res.status(201);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (conn) conn.release();
+    }
 });
 
 

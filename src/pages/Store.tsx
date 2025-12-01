@@ -291,18 +291,18 @@ const Store = () => {
                 </div>
             </header>
 
-            {/* Breadcrumb */}
-            <div className="bg-muted/30 border-b">
-                <div className="container mx-auto px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Home</span>
-                        <span>/</span>
-                        <span>What We Sell</span>
-                        <span>/</span>
-                        <span className="text-foreground font-medium">Common Use Items</span>
-                    </div>
-                </div>
-            </div>
+            {/*/!* Breadcrumb *!/*/}
+            {/*<div className="bg-muted/30 border-b">*/}
+            {/*    <div className="container mx-auto px-4 py-3">*/}
+            {/*        <div className="flex items-center gap-2 text-sm text-muted-foreground">*/}
+            {/*            <span>Home</span>*/}
+            {/*            <span>/</span>*/}
+            {/*            <span>What We Sell</span>*/}
+            {/*            <span>/</span>*/}
+            {/*            <span className="text-foreground font-medium">Common Use Items</span>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             <main className="container mx-auto px-4 py-8">
 

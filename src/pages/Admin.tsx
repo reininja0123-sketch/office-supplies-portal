@@ -13,13 +13,14 @@ import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon } from
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api, auth } from "@/lib/api";
+import { api, auth, audit } from "@/lib/api";
 
 import { User, Product, Order } from '@/integrations/dao/types';
 
 const Admin = () => {
     const [isAdmin, setIsAdmin] = useState(false)
     const [isSuperadmin, setIsSuperadmin] = useState(false);
+    const [loginId, setLoginId] = useState('')
     const [loading, setLoading] = useState(true);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -77,7 +78,7 @@ const Admin = () => {
                 fetchUsers();
                 setIsSuperadmin(true);
             }
-
+            setLoginId(user.id);
             setIsAdmin(true);
             setCurrentUserEmail(user.email);
             fetchProducts();
@@ -132,7 +133,7 @@ const Admin = () => {
         }
     };
 
-    const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    const handleUpdateUserRole = async (userId: string, newRole: string, oldRole: string) => {
         try {
             const data =  await api.patch(`/users/${userId}/role`, { role: newRole });
             
@@ -143,6 +144,18 @@ const Admin = () => {
                 });
                 // Refresh list to show change
                 fetchUsers();
+
+                await audit.trail(
+                    'UPDATE',
+                    {
+                        oldValue: oldRole,
+                        newValue: newRole,
+                        userId: userId
+                    },
+                   'USER_ROLE',
+                    loginId
+                );
+
             } else {
                 toast({
                     title: "Error",
@@ -420,7 +433,10 @@ const Admin = () => {
                         <TabsTrigger value="categories">Categories</TabsTrigger>
                         <TabsTrigger value="orders">Orders</TabsTrigger>
                         {isSuperadmin && (
-                        <TabsTrigger value="users">Users</TabsTrigger>
+                            <TabsTrigger value="users">Users</TabsTrigger>
+                        )}
+                        {isAdmin && (
+                            <TabsTrigger value="audit">Audit</TabsTrigger>
                         )}
                     </TabsList>
                     <TabsContent value="products">
@@ -849,7 +865,7 @@ const Admin = () => {
                                                         <Select
                                                             disabled={user.email === currentUserEmail} // Prevent editing self
                                                             defaultValue={user.role}
-                                                            onValueChange={(val) => handleUpdateUserRole(user.id, val)}
+                                                            onValueChange={(val) => handleUpdateUserRole(user.id, val, user.role)}
                                                         >
                                                             <SelectTrigger className="w-[120px]">
                                                                 <SelectValue placeholder="Select role" />
@@ -879,6 +895,70 @@ const Admin = () => {
                         </Card>
                     </TabsContent>
                     )}
+                    <TabsContent value="audit">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Audit Log</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>User</TableHead>
+                                            <TableHead>Table</TableHead>
+                                            <TableHead>Changes</TableHead>
+                                            <TableHead>Change</TableHead>
+                                            <TableHead>Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {/*{users.map((user) => (*/}
+                                        {/*    <TableRow key={user.id}>*/}
+                                        {/*        <TableCell>{user.email}</TableCell>*/}
+                                        {/*        <TableCell>{user.full_name}</TableCell>*/}
+                                        {/*        <TableCell>*/}
+                                        {/*            <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>*/}
+                                        {/*                {user.role.toUpperCase()}*/}
+                                        {/*            </Badge>*/}
+                                        {/*        </TableCell>*/}
+                                        {/*        <TableCell>*/}
+                                        {/*            {new Date(user.created_at).toLocaleDateString()}*/}
+                                        {/*        </TableCell>*/}
+                                        {/*        <TableCell>*/}
+                                        {/*            <div className="flex items-center gap-2">*/}
+                                        {/*                <Select*/}
+                                        {/*                    disabled={user.email === currentUserEmail} // Prevent editing self*/}
+                                        {/*                    defaultValue={user.role}*/}
+                                        {/*                    onValueChange={(val) => handleUpdateUserRole(user.id, val, user.role)}*/}
+                                        {/*                >*/}
+                                        {/*                    <SelectTrigger className="w-[120px]">*/}
+                                        {/*                        <SelectValue placeholder="Select role" />*/}
+                                        {/*                    </SelectTrigger>*/}
+                                        {/*                    <SelectContent>*/}
+                                        {/*                        <SelectItem value="user">*/}
+                                        {/*                            <div className="flex items-center">*/}
+                                        {/*                                <UserIcon className="mr-2 h-4 w-4" />*/}
+                                        {/*                                User*/}
+                                        {/*                            </div>*/}
+                                        {/*                        </SelectItem>*/}
+                                        {/*                        <SelectItem value="admin">*/}
+                                        {/*                            <div className="flex items-center">*/}
+                                        {/*                                <Shield className="mr-2 h-4 w-4" />*/}
+                                        {/*                                Admin*/}
+                                        {/*                            </div>*/}
+                                        {/*                        </SelectItem>*/}
+                                        {/*                    </SelectContent>*/}
+                                        {/*                </Select>*/}
+                                        {/*            </div>*/}
+                                        {/*        </TableCell>*/}
+                                        {/*    </TableRow>*/}
+                                        {/*))}*/}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
 
                 </Tabs>
             </main>
