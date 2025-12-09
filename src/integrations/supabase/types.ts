@@ -37,28 +37,37 @@ export type Database = {
       }
       order_items: {
         Row: {
+          approval_status: string | null
+          approved_quantity: number | null
           created_at: string | null
           id: string
           order_id: string | null
           price: number
           product_id: string | null
           quantity: number
+          requested_quantity: number | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_quantity?: number | null
           created_at?: string | null
           id?: string
           order_id?: string | null
           price: number
           product_id?: string | null
           quantity: number
+          requested_quantity?: number | null
         }
         Update: {
+          approval_status?: string | null
+          approved_quantity?: number | null
           created_at?: string | null
           id?: string
           order_id?: string | null
           price?: number
           product_id?: string | null
           quantity?: number
+          requested_quantity?: number | null
         }
         Relationships: [
           {
@@ -254,6 +263,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_order_items: {
+        Args: { p_item_approvals: Json; p_order_id: string }
+        Returns: Json
+      }
       check_low_stock_products: {
         Args: never
         Returns: {
