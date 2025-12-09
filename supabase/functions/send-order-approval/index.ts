@@ -9,12 +9,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+interface ItemApproval {
+  order_item_id: string;
+  approved_quantity: number;
+  product_name: string;
+  requested_quantity: number;
+  available_stock: number;
+}
+
 interface OrderApprovalRequest {
   orderId: string;
   userEmail: string;
   userName: string;
   totalAmount: number;
   status: string;
+  itemApprovals?: ItemApproval[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,12 +32,72 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { orderId, userEmail, userName, totalAmount, status }: OrderApprovalRequest = await req.json();
+    const { orderId, userEmail, userName, totalAmount, status, itemApprovals }: OrderApprovalRequest = await req.json();
 
     console.log("Sending order approval email for order:", orderId);
 
-    const statusText = status === "approved" ? "Approved" : "Processed";
-    const statusColor = status === "approved" ? "#16a34a" : "#3b82f6";
+    let statusText = "Processed";
+    let statusColor = "#3b82f6";
+    let statusMessage = "";
+
+    if (status === "rejected") {
+      statusText = "Rejected";
+      statusColor = "#dc2626";
+      statusMessage = "Unfortunately, your order has been rejected due to stock unavailability.";
+    } else if (status === "partial") {
+      statusText = "Partially Approved";
+      statusColor = "#f59e0b";
+      statusMessage = "Some items in your order were reduced or removed due to stock availability. Please see the details below.";
+    } else if (status === "processing") {
+      statusText = "Approved";
+      statusColor = "#16a34a";
+      statusMessage = "Your order has been approved and is being processed.";
+    }
+
+    // Generate item details HTML if itemApprovals provided
+    let itemsHtml = "";
+    if (itemApprovals && itemApprovals.length > 0) {
+      itemsHtml = `
+        <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 15px;">Order Items</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+              <tr style="background-color: #f1f5f9;">
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0;">Product</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">Requested</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">Approved</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemApprovals.map(item => {
+                let itemStatus = "Approved";
+                let itemStatusColor = "#16a34a";
+                if (item.approved_quantity === 0) {
+                  itemStatus = "Rejected";
+                  itemStatusColor = "#dc2626";
+                } else if (item.approved_quantity < item.requested_quantity) {
+                  itemStatus = "Reduced";
+                  itemStatusColor = "#f59e0b";
+                }
+                return `
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.product_name}</td>
+                    <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">${item.requested_quantity}</td>
+                    <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${item.approved_quantity}</td>
+                    <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+                      <span style="background-color: ${itemStatusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                        ${itemStatus}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
     const emailResponse = await resend.emails.send({
       from: "Government Procurement <onboarding@resend.dev>",
@@ -46,8 +115,14 @@ const handler = async (req: Request): Promise<Response> => {
               <h1 style="color: ${statusColor}; margin-bottom: 10px;">Order ${statusText}!</h1>
               <p style="font-size: 16px; margin-bottom: 20px;">Dear ${userName},</p>
               
+              ${statusMessage ? `
+                <div style="background-color: ${status === 'rejected' ? '#fef2f2' : status === 'partial' ? '#fffbeb' : '#f0fdf4'}; padding: 15px; border-left: 4px solid ${statusColor}; border-radius: 4px; margin-bottom: 20px;">
+                  <p style="margin: 0; font-size: 14px;">${statusMessage}</p>
+                </div>
+              ` : ''}
+
               <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h2 style="color: #1e293b; margin-top: 0;">Order Details</h2>
+                <h2 style="color: #1e293b; margin-top: 0;">Order Summary</h2>
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;"><strong>Order ID:</strong></td>
@@ -62,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 0;"><strong>Total Amount:</strong></td>
+                    <td style="padding: 10px 0;"><strong>Approved Total:</strong></td>
                     <td style="padding: 10px 0; text-align: right; font-size: 18px; color: ${statusColor};">
                       <strong>₱${totalAmount.toFixed(2)}</strong>
                     </td>
@@ -70,13 +145,16 @@ const handler = async (req: Request): Promise<Response> => {
                 </table>
               </div>
 
-              <div style="background-color: #e0f2fe; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 4px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px;">
-                  <strong>What's next?</strong><br>
-                  Your order has been ${status === "approved" ? "approved and is being processed" : "processed"}. 
-                  You will receive another email once your order has been shipped.
-                </p>
-              </div>
+              ${itemsHtml}
+
+              ${status !== 'rejected' ? `
+                <div style="background-color: #e0f2fe; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 4px; margin-bottom: 20px;">
+                  <p style="margin: 0; font-size: 14px;">
+                    <strong>What's next?</strong><br>
+                    Your order is now being processed. You will receive another email once your order has been shipped.
+                  </p>
+                </div>
+              ` : ''}
 
               <p style="font-size: 14px; color: #64748b; margin-top: 30px;">
                 Thank you for using our procurement service.<br>

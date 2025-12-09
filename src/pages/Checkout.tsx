@@ -102,12 +102,14 @@ const Checkout = () => {
         throw orderError;
       }
 
-      // Create order items
+      // Create order items with requested_quantity for admin approval workflow
       const orderItems = cart.map((item) => ({
         order_id: order.id,
         product_id: item.product.id,
         quantity: item.quantity,
+        requested_quantity: item.quantity,
         price: item.product.price,
+        approval_status: 'pending',
       }));
 
       const { error: itemsError } = await supabase
@@ -116,17 +118,8 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock
-      for (const item of cart) {
-        const { error: stockError } = await supabase
-          .from("products")
-          .update({
-            stock_quantity: item.product.stock_quantity - item.quantity,
-          })
-          .eq("id", item.product.id);
-
-        if (stockError) throw stockError;
-      }
+      // Stock is now deducted by admin approval, not at checkout
+      // This prevents client-side stock manipulation
 
       // Send confirmation email
       await supabase.functions.invoke("send-order-confirmation", {
@@ -147,7 +140,7 @@ const Checkout = () => {
 
       toast({
         title: "Order placed successfully!",
-        description: "You will receive a confirmation email shortly.",
+        description: "Your order is pending admin approval. You will receive an email once it's processed.",
       });
 
       navigate("/order-success");

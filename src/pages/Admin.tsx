@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download, FolderOpen } from "lucide-react";
+import { Package, ShoppingBag, Pencil, Trash2, Plus, Upload, Download, FolderOpen, ClipboardCheck } from "lucide-react";
+import { OrderApprovalDialog } from "@/components/OrderApprovalDialog";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,6 +50,8 @@ const Admin = () => {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [selectedOrderForApproval, setSelectedOrderForApproval] = useState<Order | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -709,6 +712,10 @@ const Admin = () => {
                                 ? "bg-blue-500"
                                 : order.status === "completed"
                                 ? "bg-green-500"
+                                : order.status === "rejected"
+                                ? "bg-destructive"
+                                : order.status === "partial"
+                                ? "bg-orange-500"
                                 : ""
                             }
                           >
@@ -719,23 +726,32 @@ const Admin = () => {
                           {new Date(order.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          {order.status === "pending" && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleApproveOrder(order.id, "processing")}
-                            >
-                              Approve
-                            </Button>
-                          )}
-                          {order.status === "processing" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApproveOrder(order.id, "completed")}
-                            >
-                              Complete
-                            </Button>
-                          )}
+                          <div className="flex gap-2">
+                            {order.status === "pending" && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedOrderForApproval(order);
+                                  setApprovalDialogOpen(true);
+                                }}
+                              >
+                                <ClipboardCheck className="mr-1 h-4 w-4" />
+                                Review
+                              </Button>
+                            )}
+                            {(order.status === "processing" || order.status === "partial") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleApproveOrder(order.id, "completed")}
+                              >
+                                Complete
+                              </Button>
+                            )}
+                            {order.status === "rejected" && (
+                              <Badge variant="destructive">Rejected</Badge>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -843,6 +859,13 @@ const Admin = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <OrderApprovalDialog
+          order={selectedOrderForApproval}
+          open={approvalDialogOpen}
+          onOpenChange={setApprovalDialogOpen}
+          onApprovalComplete={fetchOrders}
+        />
       </main>
     </div>
   );
