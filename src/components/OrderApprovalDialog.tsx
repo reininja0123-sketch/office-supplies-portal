@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, X, Minus, AlertTriangle } from "lucide-react";
+import { Check, X, Minus, AlertTriangle, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { downloadRISPDF } from "@/utils/generateRISPDF";
 
 interface OrderItem {
   id: string;
@@ -164,6 +165,50 @@ export function OrderApprovalDialog({
       const someReduced = itemApprovals.some(
         (item) => item.approved_quantity > 0 && item.approved_quantity < item.requested_quantity
       );
+      const newStatus = allRejected ? "rejected" : someReduced ? "partial" : "processing";
+
+      // Get current user for approval info
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user?.id)
+        .maybeSingle();
+
+      // Generate RIS PDF with approval info
+      if (!allRejected) {
+        const pdfItems = orderItems.map((item) => {
+          const approval = itemApprovals.find((a) => a.order_item_id === item.id);
+          return {
+            product: {
+              id: item.product_id,
+              name: item.product?.name || "Unknown",
+              sku: item.product?.sku || "",
+              price: item.price,
+              stock_quantity: item.product?.stock_quantity || 0,
+            },
+            quantity: item.requested_quantity || item.quantity,
+            approved_quantity: approval?.approved_quantity || 0,
+            approval_status: approval?.approved_quantity === 0 ? "rejected" : 
+                            (approval?.approved_quantity || 0) < (item.requested_quantity || item.quantity) ? "partial" : "approved",
+          };
+        });
+
+        await downloadRISPDF({
+          orderId: order.id,
+          userName: order.user_name,
+          userEmail: order.user_email,
+          items: pdfItems,
+          total: newTotal,
+          date: new Date(order.created_at),
+          status: newStatus,
+          approvalInfo: {
+            approvedBy: profile?.full_name || user?.email || "Admin",
+            approvedAt: new Date(),
+            issuedBy: profile?.full_name || user?.email || "Admin",
+          },
+        });
+      }
 
       // Send approval email
       try {
@@ -173,7 +218,7 @@ export function OrderApprovalDialog({
             userEmail: order.user_email,
             userName: order.user_name,
             totalAmount: newTotal,
-            status: allRejected ? "rejected" : someReduced ? "partial" : "processing",
+            status: newStatus,
             itemApprovals: itemApprovals,
           },
         });
@@ -186,8 +231,8 @@ export function OrderApprovalDialog({
         description: allRejected
           ? "All items have been rejected"
           : someReduced
-          ? `Order partially approved. New total: ₱${newTotal.toFixed(2)}`
-          : `Order fully approved. Total: ₱${newTotal.toFixed(2)}`,
+          ? `Order partially approved. New total: ₱${newTotal.toFixed(2)}. RIS form downloaded.`
+          : `Order fully approved. Total: ₱${newTotal.toFixed(2)}. RIS form downloaded.`,
       });
 
       onApprovalComplete();
