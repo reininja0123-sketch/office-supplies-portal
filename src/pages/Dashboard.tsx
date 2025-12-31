@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Download, Package, ShoppingBag, FileDown, Users, DollarSign, TrendingUp, Clock } from "lucide-react";
+import { ArrowLeft, Download, Package, ShoppingBag, FileDown, Users, DollarSign, TrendingUp, Clock, FileText } from "lucide-react";
+import { downloadRISPDF } from "@/utils/generateRISPDF";
 import type { User } from "@supabase/supabase-js";
 
 interface Order {
@@ -23,9 +24,14 @@ interface OrderItem {
   product_id: string;
   quantity: number;
   price: number;
+  requested_quantity?: number;
+  approved_quantity?: number;
+  approval_status?: string;
   products: {
+    id: string;
     name: string;
     sku: string;
+    stock_quantity: number;
   };
 }
 
@@ -109,9 +115,11 @@ const Dashboard = () => {
         .from("order_items")
         .select(`
           *,
-          products (
+          products:product_id (
+            id,
             name,
-            sku
+            sku,
+            stock_quantity
           )
         `)
         .eq("order_id", orderId);
@@ -127,6 +135,59 @@ const Dashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load order details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadRIS = async (order: Order) => {
+    const items = orderItems[order.id] || [];
+    
+    if (items.length === 0) {
+      await fetchOrderItems(order.id);
+      // Wait a bit for state to update
+      setTimeout(() => downloadRISForOrder(order), 300);
+      return;
+    }
+    
+    downloadRISForOrder(order);
+  };
+
+  const downloadRISForOrder = async (order: Order) => {
+    const items = orderItems[order.id] || [];
+    
+    try {
+      const pdfItems = items.map((item) => ({
+        product: {
+          id: item.products?.id || item.product_id,
+          name: item.products?.name || "Unknown",
+          sku: item.products?.sku || "",
+          price: item.price,
+          stock_quantity: item.products?.stock_quantity || 0,
+        },
+        quantity: item.requested_quantity || item.quantity,
+        approved_quantity: item.approved_quantity ?? undefined,
+        approval_status: item.approval_status,
+      }));
+
+      await downloadRISPDF({
+        orderId: order.id,
+        userName: order.user_name,
+        userEmail: order.user_email,
+        items: pdfItems,
+        total: order.total_amount,
+        date: new Date(order.created_at),
+        status: order.status,
+      });
+
+      toast({
+        title: "RIS Downloaded",
+        description: "Your Requisition and Issue Slip has been downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate RIS form.",
         variant: "destructive",
       });
     }
@@ -443,13 +504,21 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => fetchOrderItems(order.id)}
                     >
                       {expandedOrder === order.id ? "Hide" : "View"} Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadRIS(order)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Download RIS
                     </Button>
                     <Button
                       variant="outline"

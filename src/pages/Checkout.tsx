@@ -154,7 +154,7 @@ const Checkout = () => {
         description: "Your RIS form has been downloaded. Your order is pending admin approval.",
       });
 
-      navigate("/order-success");
+      navigate(`/order-success?orderId=${order.id}`);
     } catch (error: any) {
       console.error("Error placing order:", error);
       toast({

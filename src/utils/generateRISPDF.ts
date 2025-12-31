@@ -12,6 +12,14 @@ interface OrderItem {
     stock_quantity: number;
   };
   quantity: number;
+  approved_quantity?: number;
+  approval_status?: string;
+}
+
+interface ApprovalInfo {
+  approvedBy?: string;
+  approvedAt?: Date;
+  issuedBy?: string;
 }
 
 interface RISData {
@@ -24,6 +32,8 @@ interface RISData {
   division?: string;
   office?: string;
   purpose?: string;
+  status?: string;
+  approvalInfo?: ApprovalInfo;
 }
 
 export const generateRISPDF = async (data: RISData): Promise<jsPDF> => {
@@ -79,16 +89,27 @@ export const generateRISPDF = async (data: RISData): Promise<jsPDF> => {
   doc.text(`Office: ${data.office || "PHILIPPINE NATIONAL AIDS COUNCIL"}`, col1X, infoY + 12);
   doc.text(`RIS No.: ${data.orderId.slice(0, 16).toUpperCase()}`, col2X, infoY + 12);
   
-  // Items table
-  const tableData = data.items.map((item, index) => [
-    item.product.sku || `ITEM-${String(index + 1).padStart(3, "0")}`,
-    "PIECE",
-    item.product.name.toUpperCase(),
-    item.quantity.toString(),
-    item.product.stock_quantity >= item.quantity ? "YES" : "NO",
-    item.quantity.toString(),
-    "",
-  ]);
+  // Items table - use approved quantities if available
+  const isApproved = data.status && ["processing", "completed", "partial"].includes(data.status);
+  
+  const tableData = data.items.map((item, index) => {
+    const requestedQty = item.quantity;
+    const approvedQty = item.approved_quantity ?? item.quantity;
+    const stockAvailable = item.product.stock_quantity >= requestedQty ? "YES" : "NO";
+    const issueQty = isApproved ? approvedQty : requestedQty;
+    const remarks = item.approval_status === "rejected" ? "REJECTED" : 
+                   (item.approved_quantity !== undefined && item.approved_quantity < item.quantity) ? "PARTIAL" : "";
+    
+    return [
+      item.product.sku || `ITEM-${String(index + 1).padStart(3, "0")}`,
+      "PIECE",
+      item.product.name.toUpperCase(),
+      requestedQty.toString(),
+      stockAvailable,
+      issueQty.toString(),
+      remarks,
+    ];
+  });
   
   // Add "NOTHING FOLLOWS" row
   tableData.push(["", "", "****** NOTHING FOLLOWS ******", "", "", "", ""]);
@@ -132,10 +153,22 @@ export const generateRISPDF = async (data: RISData): Promise<jsPDF> => {
   doc.text("If disapprove, provide the reason:", col1X, finalY + 18);
   doc.line(col1X + 55, finalY + 18, pageWidth - 15, finalY + 18);
   
-  // Approve/Disapprove checkboxes
+  // Approve/Disapprove checkboxes - fill based on status
+  const isRejected = data.status === "rejected";
+  const isApprovedStatus = data.status && ["processing", "completed", "partial"].includes(data.status);
+  
   doc.rect(col1X, finalY + 23, 4, 4);
+  if (isApprovedStatus) {
+    doc.setFillColor(0, 0, 0);
+    doc.rect(col1X, finalY + 23, 4, 4, "F");
+  }
   doc.text("Approve", col1X + 6, finalY + 26);
+  
   doc.rect(col1X + 30, finalY + 23, 4, 4);
+  if (isRejected) {
+    doc.setFillColor(0, 0, 0);
+    doc.rect(col1X + 30, finalY + 23, 4, 4, "F");
+  }
   doc.text("Disapprove", col1X + 36, finalY + 26);
   
   // Signature section
@@ -160,9 +193,22 @@ export const generateRISPDF = async (data: RISData): Promise<jsPDF> => {
     doc.line(x + 18, sigY + 8, x + sigColWidth - 5, sigY + 8);
     
     doc.text("Printed Name:", x, sigY + 16);
+    
+    // Fill in names based on role
     if (i === 0 || i === 3) {
+      // Requested by / Received by = customer
       doc.setFont("helvetica", "bold");
       doc.text(data.userName.toUpperCase(), x, sigY + 22);
+      doc.setFont("helvetica", "normal");
+    } else if (i === 1 && data.approvalInfo?.approvedBy) {
+      // Approved by
+      doc.setFont("helvetica", "bold");
+      doc.text(data.approvalInfo.approvedBy.toUpperCase(), x, sigY + 22);
+      doc.setFont("helvetica", "normal");
+    } else if (i === 2 && data.approvalInfo?.issuedBy) {
+      // Issued by
+      doc.setFont("helvetica", "bold");
+      doc.text(data.approvalInfo.issuedBy.toUpperCase(), x, sigY + 22);
       doc.setFont("helvetica", "normal");
     } else {
       doc.line(x + 22, sigY + 16, x + sigColWidth - 5, sigY + 16);
@@ -174,7 +220,11 @@ export const generateRISPDF = async (data: RISData): Promise<jsPDF> => {
     doc.setFontSize(9);
     
     doc.text("Date:", x, sigY + 44);
-    const dateStr = data.date.toLocaleDateString("en-US", {
+    // Use approval date for approved/issued, order date for requested/received
+    const dateToUse = (i === 1 || i === 2) && data.approvalInfo?.approvedAt 
+      ? data.approvalInfo.approvedAt 
+      : data.date;
+    const dateStr = dateToUse.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
