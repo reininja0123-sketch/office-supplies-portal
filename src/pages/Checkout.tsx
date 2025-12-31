@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileDown } from "lucide-react";
+import { downloadRISPDF } from "@/utils/generateRISPDF";
 
 interface Product {
   id: string;
@@ -132,6 +133,16 @@ const Checkout = () => {
         },
       });
 
+      // Generate and download RIS PDF
+      await downloadRISPDF({
+        orderId: order.id,
+        userName: formData.name,
+        userEmail: formData.email,
+        items: cart,
+        total,
+        date: new Date(),
+      });
+
       // Clear cart
       if (userId) {
         const cartKey = `cart_${userId}`;
@@ -140,7 +151,7 @@ const Checkout = () => {
 
       toast({
         title: "Order placed successfully!",
-        description: "Your order is pending admin approval. You will receive an email once it's processed.",
+        description: "Your RIS form has been downloaded. Your order is pending admin approval.",
       });
 
       navigate("/order-success");
