@@ -32,6 +32,11 @@ const Auth = () => {
             return;
         }
 
+        if (user.role === "admin" || user.role === "superadmin") {
+            navigate("/admin");
+            setLoading(false);
+            return;
+        }
         toast({ title: "Welcome back!", description: "Successfully signed in." });
         navigate("/");
         setLoading(false);

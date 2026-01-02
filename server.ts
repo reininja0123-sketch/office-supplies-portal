@@ -542,7 +542,7 @@ app.get('/orders/:id/items', async (req: Request, res: Response) => {
         conn = await pool.getConnection();
         // Join with products to get name and sku for display
         const query = `
-      SELECT oi.*, p.name as product_name, p.sku as product_sku
+      SELECT oi.*, p.name as product_name, p.sku as product_sku, p.stock_quantity
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
@@ -555,11 +555,14 @@ app.get('/orders/:id/items', async (req: Request, res: Response) => {
             order_id: row.order_id,
             product_id: row.product_id,
             quantity: row.quantity,
+            approved_quantity: row.approved_quantity, // This is the APPROVED quantity
+            approval_status: row.approval_status,
             price: row.price,
             created_at: row.created_at,
             products: { // Nested object required by Dashboard.tsx
                 name: row.product_name,
-                sku: row.product_sku
+                sku: row.product_sku,
+                stock_quantity: row.stock_quantity
             }
         }));
 
@@ -615,6 +618,71 @@ app.get('/order-items', async (req: Request, res: Response) => {
     } catch (err) {
         console.error("Error fetching bulk items:", err);
         res.status(500).json({ error: 'Database error' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// POST Approve Order (Handles Partial Approval & Restocking)
+app.post('/orders/:id/approve', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        const orderId = req.params.id;
+        const { itemApprovals, status, approved_by, new_total } = req.body;
+
+        // 1. Update Order Status
+        await conn.query(
+            `UPDATE orders
+             SET status = ?, total_amount = ?, approved_by = ?, approved_at = NOW()
+             WHERE id = ?`,
+            [status, new_total, approved_by, orderId]
+        );
+
+        // 2. Process Items
+        // We need to compare the APPROVED qty against the REQUESTED qty (original 'quantity')
+        const originalItems = await conn.query("SELECT id, product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
+
+        for (const approval of itemApprovals) {
+            const originalItem = originalItems.find((i: any) => i.id === approval.order_item_id);
+
+            if (originalItem) {
+                // Calculate Restock: If they asked for 10, and we approve 8, we return 2 to stock.
+                // If we reject all (approve 0), we return 10 to stock.
+                const restockAmount = originalItem.quantity - approval.approved_quantity;
+
+                if (restockAmount > 0) {
+                    await conn.query(
+                        "UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+                        [restockAmount, originalItem.product_id]
+                    );
+                }
+
+                // Determine Item Status
+                let itemStatus = 'processing';
+                if (approval.approved_quantity === 0) itemStatus = 'rejected';
+                else if (approval.approved_quantity < originalItem.quantity) itemStatus = 'partial';
+
+                // Update the order_items table with specific columns
+                // NOTE: We do NOT change 'quantity' anymore, we update 'approved_quantity'
+                await conn.query(
+                    `UPDATE order_items 
+           SET approved_quantity = ?, approval_status = ? 
+           WHERE id = ?`,
+                    [approval.approved_quantity, itemStatus, approval.order_item_id]
+                );
+            }
+        }
+
+        await conn.commit();
+        res.json({ success: true, new_total });
+
+    } catch (err: any) {
+        if (conn) await conn.rollback();
+        console.error("Approval failed:", err);
+        res.status(500).json({ error: err.message });
     } finally {
         if (conn) conn.release();
     }

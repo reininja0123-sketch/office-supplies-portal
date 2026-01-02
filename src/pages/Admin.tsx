@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon } from "lucide-react";
+import { OrderApprovalDialog } from "@/components/OrderApprovalDialog";
+import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon, ClipboardCheck, CheckCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +30,8 @@ const Admin = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+    const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+    const [selectedOrderForApproval, setSelectedOrderForApproval] = useState<Order | null>(null);
     const [editingCategory, setEditingCategory] = useState<any>(null);
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -709,17 +712,25 @@ const Admin = () => {
                                                     {order.status === "pending" && (
                                                         <Button
                                                             size="sm"
-                                                            onClick={() => handleApproveOrder(order.id, "processing")}
+                                                            onClick={() => {
+                                                                // handleApproveOrder(order.id, "processing")
+                                                                    setSelectedOrderForApproval(order);
+                                                                    setApprovalDialogOpen(true);
+                                                                }
+                                                            }
                                                         >
-                                                            Approve
+                                                            <ClipboardCheck className="mr-1 h-4 w-4" />
+                                                            Review
                                                         </Button>
                                                     )}
                                                     {order.status === "processing" && (
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
+                                                            color="green"
                                                             onClick={() => handleApproveOrder(order.id, "completed")}
                                                         >
+                                                            <CheckCheck className="mr-1 h-4 w-4" />
                                                             Complete
                                                         </Button>
                                                     )}
@@ -906,53 +917,52 @@ const Admin = () => {
                                         <TableRow>
                                             <TableHead>User</TableHead>
                                             <TableHead>Table</TableHead>
-                                            <TableHead>Changes</TableHead>
-                                            <TableHead>Change</TableHead>
                                             <TableHead>Actions</TableHead>
+                                            <TableHead>Descriptions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {/*{users.map((user) => (*/}
-                                        {/*    <TableRow key={user.id}>*/}
-                                        {/*        <TableCell>{user.email}</TableCell>*/}
-                                        {/*        <TableCell>{user.full_name}</TableCell>*/}
-                                        {/*        <TableCell>*/}
-                                        {/*            <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>*/}
-                                        {/*                {user.role.toUpperCase()}*/}
-                                        {/*            </Badge>*/}
-                                        {/*        </TableCell>*/}
-                                        {/*        <TableCell>*/}
-                                        {/*            {new Date(user.created_at).toLocaleDateString()}*/}
-                                        {/*        </TableCell>*/}
-                                        {/*        <TableCell>*/}
-                                        {/*            <div className="flex items-center gap-2">*/}
-                                        {/*                <Select*/}
-                                        {/*                    disabled={user.email === currentUserEmail} // Prevent editing self*/}
-                                        {/*                    defaultValue={user.role}*/}
-                                        {/*                    onValueChange={(val) => handleUpdateUserRole(user.id, val, user.role)}*/}
-                                        {/*                >*/}
-                                        {/*                    <SelectTrigger className="w-[120px]">*/}
-                                        {/*                        <SelectValue placeholder="Select role" />*/}
-                                        {/*                    </SelectTrigger>*/}
-                                        {/*                    <SelectContent>*/}
-                                        {/*                        <SelectItem value="user">*/}
-                                        {/*                            <div className="flex items-center">*/}
-                                        {/*                                <UserIcon className="mr-2 h-4 w-4" />*/}
-                                        {/*                                User*/}
-                                        {/*                            </div>*/}
-                                        {/*                        </SelectItem>*/}
-                                        {/*                        <SelectItem value="admin">*/}
-                                        {/*                            <div className="flex items-center">*/}
-                                        {/*                                <Shield className="mr-2 h-4 w-4" />*/}
-                                        {/*                                Admin*/}
-                                        {/*                            </div>*/}
-                                        {/*                        </SelectItem>*/}
-                                        {/*                    </SelectContent>*/}
-                                        {/*                </Select>*/}
-                                        {/*            </div>*/}
-                                        {/*        </TableCell>*/}
-                                        {/*    </TableRow>*/}
-                                        {/*))}*/}
+                                        {users.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell>{user.email}</TableCell>
+                                                <TableCell>{user.full_name}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
+                                                        {user.role.toUpperCase()}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {new Date(user.created_at).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        {/*<Select*/}
+                                                        {/*    disabled={user.email === currentUserEmail} // Prevent editing self*/}
+                                                        {/*    defaultValue={user.role}*/}
+                                                        {/*    onValueChange={(val) => handleUpdateUserRole(user.id, val, user.role)}*/}
+                                                        {/*>*/}
+                                                        {/*    <SelectTrigger className="w-[120px]">*/}
+                                                        {/*        <SelectValue placeholder="Select role" />*/}
+                                                        {/*    </SelectTrigger>*/}
+                                                        {/*    <SelectContent>*/}
+                                                        {/*        <SelectItem value="user">*/}
+                                                        {/*            <div className="flex items-center">*/}
+                                                        {/*                <UserIcon className="mr-2 h-4 w-4" />*/}
+                                                        {/*                User*/}
+                                                        {/*            </div>*/}
+                                                        {/*        </SelectItem>*/}
+                                                        {/*        <SelectItem value="admin">*/}
+                                                        {/*            <div className="flex items-center">*/}
+                                                        {/*                <Shield className="mr-2 h-4 w-4" />*/}
+                                                        {/*                Admin*/}
+                                                        {/*            </div>*/}
+                                                        {/*        </SelectItem>*/}
+                                                        {/*    </SelectContent>*/}
+                                                        {/*</Select>*/}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -961,6 +971,12 @@ const Admin = () => {
 
 
                 </Tabs>
+                <OrderApprovalDialog
+                    order={selectedOrderForApproval}
+                    open={approvalDialogOpen}
+                    onOpenChange={setApprovalDialogOpen}
+                    onApprovalComplete={fetchOrders}
+                />
             </main>
         </div>
     );
