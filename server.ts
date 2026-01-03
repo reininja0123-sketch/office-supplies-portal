@@ -301,18 +301,18 @@ app.post('/products', async (req: Request, res: Response) => {
         conn = await pool.getConnection();
         const {
             name, description, price, stock_quantity, sku,
-            image_url, category_id, low_stock_threshold
+            image_url, category_id, low_stock_threshold, product_unit
         } = req.body;
 
         const id = crypto.randomUUID();
 
         await conn.query(
             `INSERT INTO products 
-       (id, name, description, price, stock_quantity, sku, image_url, category_id, low_stock_threshold)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, description, price, stock_quantity, sku, image_url, category_id, low_stock_threshold, product_unit)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 id, name, description, price, stock_quantity, sku,
-                image_url || null, category_id || null, low_stock_threshold || 10
+                image_url || null, category_id || null, low_stock_threshold || 10, product_unit
             ]
         );
 
@@ -332,7 +332,7 @@ app.put('/products/:id', async (req: Request, res: Response) => {
         conn = await pool.getConnection();
         const {
             name, description, price, stock_quantity, sku,
-            image_url, category_id, low_stock_threshold
+            image_url, category_id, low_stock_threshold, product_unit
         } = req.body;
 
         const { id } = req.params;
@@ -340,11 +340,11 @@ app.put('/products/:id', async (req: Request, res: Response) => {
         await conn.query(
             `UPDATE products SET 
        name=?, description=?, price=?, stock_quantity=?, sku=?, 
-       image_url=?, category_id=?, low_stock_threshold=?
+       image_url=?, category_id=?, low_stock_threshold=?, product_unit=?
        WHERE id=?`,
             [
                 name, description, price, stock_quantity, sku,
-                image_url || null, category_id || null, low_stock_threshold, id
+                image_url || null, category_id || null, low_stock_threshold, product_unit, id
             ]
         );
 

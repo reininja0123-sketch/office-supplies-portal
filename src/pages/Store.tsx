@@ -19,6 +19,7 @@ interface Product {
     sku: string;
     image_url: string;
     category_id: string;
+    product_unit: string;
 }
 
 interface Category {
@@ -428,7 +429,7 @@ const Store = () => {
                                                   </span>
                                                 <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
                                                     {product.stock_quantity > 0
-                                                        ? `${product.stock_quantity} units`
+                                                        ? `${product.stock_quantity} ${product.product_unit.toLowerCase()}${product.stock_quantity > 1 ? 's' : ''}`
                                                         : "Out of stock"}
                                                 </Badge>
                                             </div>

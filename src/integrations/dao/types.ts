@@ -34,6 +34,7 @@ export interface Product {
     image_url: string | null;
     created_at: Date | null;
     updated_at: Date | null;
+    product_unit: string;
 }
 
 export interface ProductVariant {

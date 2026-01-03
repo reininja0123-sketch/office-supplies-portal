@@ -8,6 +8,8 @@ import { Check, X, Minus, Plus, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { downloadRISPDF } from "@/utils/generateRISPDF";
 import { api, auth } from "@/lib/api";
+import { QuantitySelector } from "@/components/QuantitySelector";
+import { capitalizeFirstLetter } from "@/utils/common.ts";
 
 interface OrderItem {
     id: string;
@@ -53,6 +55,7 @@ export function OrderApprovalDialog({
                                         onOpenChange,
                                         onApprovalComplete,
                                     }: OrderApprovalDialogProps) {
+    const [isViewOnly, setViewOnly] = useState(false)
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [itemApprovals, setItemApprovals] = useState<ItemApproval[]>([]);
     const [loading, setLoading] = useState(false);
@@ -60,6 +63,7 @@ export function OrderApprovalDialog({
     const { toast } = useToast();
 
     useEffect(() => {
+        setViewOnly(false);
         if (order && open) {
             fetchOrderItems();
         }
@@ -78,6 +82,10 @@ export function OrderApprovalDialog({
             }));
 
             setOrderItems(items);
+
+            if (order.status.trim() == 'pending') {
+                setViewOnly(true);
+            }
 
             // Initialize approvals state
             setItemApprovals(
@@ -237,7 +245,19 @@ export function OrderApprovalDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         Order Approval - {order.user_name}
-                        <Badge variant="outline">{order.status}</Badge>
+                        <Badge
+                            className={
+                                order.status === "pending"
+                                    ? "bg-yellow-500"
+                                    : order.status === "processing"
+                                        ? "bg-blue-500"
+                                        : order.status === "completed"
+                                            ? "bg-green-500"
+                                            : ""
+                            }
+                        >
+                            {capitalizeFirstLetter(order.status)}
+                        </Badge>
                     </DialogTitle>
                 </DialogHeader>
 
@@ -264,16 +284,18 @@ export function OrderApprovalDialog({
                         </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    {isViewOnly && (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                         <Button variant="outline" size="sm" onClick={approveAll}>
                             <Check className="mr-1 h-4 w-4" />
                             Approve All
                         </Button>
-                        <Button variant="outline" size="sm" onClick={rejectAll}>
+                        <Button variant="outline"  size="sm" onClick={rejectAll}>
                             <X className="mr-1 h-4 w-4" />
                             Reject All
                         </Button>
                     </div>
+                    )}
 
                     {loading ? (
                         <div className="text-center py-8">Loading order items...</div>
@@ -315,36 +337,44 @@ export function OrderApprovalDialog({
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center justify-center gap-1">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() =>
-                                                            updateApprovalQuantity(item.order_item_id, item.approved_quantity - 1)
-                                                        }
-                                                    >
-                                                        <Minus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Input
-                                                        type="number"
-                                                        min={0}
-                                                        max={item.requested_quantity}
-                                                        value={item.approved_quantity}
-                                                        onChange={(e) =>
-                                                            updateApprovalQuantity(item.order_item_id, parseInt(e.target.value) || 0)
-                                                        }
-                                                        className="w-16 h-8 text-center"
+
+                                                    <QuantitySelector
+                                                        maxQuantity={item.requested_quantity}
+                                                        initValue={item.requested_quantity}
+                                                        onQuantityChange={(qty) => {
+                                                            console.log("TEST " + qty)
+                                                        }}
                                                     />
-                                                    <Button
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() =>
-                                                            updateApprovalQuantity(item.order_item_id, item.approved_quantity + 1)
-                                                        }
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                    </Button>
+                                                    {/*<Button*/}
+                                                    {/*    variant="outline"*/}
+                                                    {/*    size="icon"*/}
+                                                    {/*    className="h-8 w-8"*/}
+                                                    {/*    onClick={() =>*/}
+                                                    {/*        updateApprovalQuantity(item.order_item_id, item.approved_quantity - 1)*/}
+                                                    {/*    }*/}
+                                                    {/*>*/}
+                                                    {/*    <Minus className="h-4 w-4" />*/}
+                                                    {/*</Button>*/}
+                                                    {/*<Input*/}
+                                                    {/*    type="number"*/}
+                                                    {/*    min={0}*/}
+                                                    {/*    max={item.requested_quantity}*/}
+                                                    {/*    value={item.approved_quantity}*/}
+                                                    {/*    onChange={(e) =>*/}
+                                                    {/*        updateApprovalQuantity(item.order_item_id, parseInt(e.target.value) || 0)*/}
+                                                    {/*    }*/}
+                                                    {/*    className="w-16 h-8 text-center"*/}
+                                                    {/*/>*/}
+                                                    {/*<Button*/}
+                                                    {/*    variant="outline"*/}
+                                                    {/*    size="icon"*/}
+                                                    {/*    className="h-8 w-8"*/}
+                                                    {/*    onClick={() =>*/}
+                                                    {/*        updateApprovalQuantity(item.order_item_id, item.approved_quantity + 1)*/}
+                                                    {/*    }*/}
+                                                    {/*>*/}
+                                                    {/*    <Plus className="h-4 w-4" />*/}
+                                                    {/*</Button>*/}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">₱{lineTotal.toFixed(2)}</TableCell>
@@ -388,11 +418,14 @@ export function OrderApprovalDialog({
                 </div>
 
                 <DialogFooter className="gap-2">
+
+                    {isViewOnly && (
+                        <Button onClick={handleSubmit} disabled={submitting}>
+                            {submitting ? "Processing..." : "Confirm Approval"}
+                        </Button>
+                    )}
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={submitting}>
-                        {submitting ? "Processing..." : "Confirm Approval"}
+                        Close
                     </Button>
                 </DialogFooter>
             </DialogContent>

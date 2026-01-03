@@ -10,11 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { OrderApprovalDialog } from "@/components/OrderApprovalDialog";
-import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon, ClipboardCheck, CheckCheck } from "lucide-react";
+import { Pencil, Trash2, Plus, Upload, Download, Shield, User as UserIcon, ClipboardCheck, CheckCheck, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, auth, audit } from "@/lib/api";
+import { capitalizeFirstLetter } from "@/utils/common.ts";
 
 import { User, Product, Order } from '@/integrations/dao/types';
 
@@ -46,6 +47,7 @@ const Admin = () => {
         image_url: "",
         low_stock_threshold: "10",
         category_id: "",
+        product_unit: "PIECE"
     });
 
     const [categoryFormData, setCategoryFormData] = useState({
@@ -187,6 +189,7 @@ const Admin = () => {
             image_url: formData.image_url,
             low_stock_threshold: parseInt(formData.low_stock_threshold),
             category_id: formData.category_id || null,
+            product_unit: formData.product_unit,
         };
 
         try {
@@ -209,6 +212,7 @@ const Admin = () => {
                 image_url: "",
                 low_stock_threshold: "10",
                 category_id: "",
+                product_unit: "PIECE",
             });
             fetchProducts();
         } catch (error: any) {
@@ -231,6 +235,7 @@ const Admin = () => {
             image_url: product.image_url || "",
             low_stock_threshold: product.low_stock_threshold.toString(),
             category_id: product.category_id || "",
+            product_unit: product.product_unit,
         });
         setIsDialogOpen(true);
     };
@@ -430,7 +435,7 @@ const Admin = () => {
             </header>
 
             <main className="container mx-auto px-4 py-8">
-                <Tabs defaultValue="products">
+                <Tabs defaultValue="orders">
                     <TabsList>
                         <TabsTrigger value="products">Products</TabsTrigger>
                         <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -478,6 +483,7 @@ const Admin = () => {
                                                         image_url: "",
                                                         low_stock_threshold: "10",
                                                         category_id: "",
+                                                        product_unit: "PIECE",
                                                     });
                                                 }}
                                             >
@@ -539,6 +545,19 @@ const Admin = () => {
                                                                     ...formData,
                                                                     stock_quantity: e.target.value,
                                                                 })
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-4">
+                                                        <Label htmlFor="price">Units</Label>
+                                                        <Input
+                                                            id="unit"
+                                                            required
+                                                            value={formData.product_unit}
+                                                            onChange={(e) =>
+                                                                setFormData({ ...formData, name: e.target.value })
                                                             }
                                                         />
                                                     </div>
@@ -702,7 +721,7 @@ const Admin = () => {
                                                                         : ""
                                                         }
                                                     >
-                                                        {order.status}
+                                                        {capitalizeFirstLetter(order.status)}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -713,7 +732,6 @@ const Admin = () => {
                                                         <Button
                                                             size="sm"
                                                             onClick={() => {
-                                                                // handleApproveOrder(order.id, "processing")
                                                                     setSelectedOrderForApproval(order);
                                                                     setApprovalDialogOpen(true);
                                                                 }
@@ -732,6 +750,20 @@ const Admin = () => {
                                                         >
                                                             <CheckCheck className="mr-1 h-4 w-4" />
                                                             Complete
+                                                        </Button>
+                                                    )}
+
+                                                    {order.status !== "pending" && order.status !== "processing" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setSelectedOrderForApproval(order);
+                                                                setApprovalDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <List className="mr-1 h-4 w-4" />
+                                                            View
                                                         </Button>
                                                     )}
                                                 </TableCell>
