@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
-import { auth, api } from "@/lib/api"; // Import local API
+import { auth, api } from "@/lib/api";
+import {User} from "@/integrations/dao/types.ts"; // Import local API
 
 interface Product {
     id: string;
@@ -28,6 +29,7 @@ const Checkout = () => {
         email: "",
         phone: "",
     });
+
     const navigate = useNavigate();
     const { toast } = useToast();
 
@@ -35,13 +37,22 @@ const Checkout = () => {
         checkUserAndLoadCart();
     }, [navigate]);
 
-    const checkUserAndLoadCart = () => {
+    const checkUserAndLoadCart = async () => {
         const user = auth.getUser();
         if (!user) {
             navigate("/auth");
             return;
         }
-        setUserId(user.id);
+
+        const userData = await api.get(`/user/${user.id}/info`);
+        setUserId(userData.id);
+
+        setFormData({
+            name: userData.full_name,
+            email: userData.email,
+            phone: ""
+        })
+
         const cartKey = `cart_${user.id}`;
         const savedCart = localStorage.getItem(cartKey);
         if (savedCart) {
@@ -75,7 +86,8 @@ const Checkout = () => {
                 items: cart.map(item => ({
                     product_id: item.product.id,
                     quantity: item.quantity
-                }))
+                })),
+                req_total_amount: total
             });
 
             // Clear cart
@@ -129,7 +141,7 @@ const Checkout = () => {
                                         <Input
                                             id="name"
                                             type="text"
-                                            required
+                                            disabled
                                             value={formData.name}
                                             onChange={(e) =>
                                                 setFormData({ ...formData, name: e.target.value })
@@ -141,7 +153,7 @@ const Checkout = () => {
                                         <Input
                                             id="email"
                                             type="email"
-                                            required
+                                            disabled
                                             value={formData.email}
                                             onChange={(e) =>
                                                 setFormData({ ...formData, email: e.target.value })
@@ -153,7 +165,6 @@ const Checkout = () => {
                                         <Input
                                             id="phone"
                                             type="tel"
-                                            required
                                             value={formData.phone}
                                             onChange={(e) =>
                                                 setFormData({ ...formData, phone: e.target.value })

@@ -206,6 +206,36 @@ app.get('/users', async (req: Request, res: Response) => {
     }
 });
 
+// get user
+app.get('/user/:id/info', async (req: Request, res: Response) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const userId = req.params.id;
+        const query = `
+      SELECT u.id, u.email, u.full_name, u.created_at, ur.role
+      FROM users u
+      LEFT JOIN user_roles ur ON u.id = ur.user_id
+      WHERE u.id = ?
+      ORDER BY u.created_at DESC
+    `;
+        const rows = await conn.query(query, [userId]);
+
+        const formattedRows = rows.map((row: any) => ({
+            id: row.id,
+            full_name: row.full_name,
+            email: row.email
+        }));
+
+        res.json(formattedRows[0]);
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
 // PUT / UPDATE  User Role
 app.put('/users/:id/role', async (req: Request, res: Response) => {
     let conn;
@@ -454,15 +484,15 @@ app.post('/orders', async (req: Request, res: Response) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        const { user_email, user_name, user_phone, total_amount, items, user_id } = req.body;
+        const { user_email, user_name, user_phone, total_amount, items, user_id, req_total_amount } = req.body;
         const orderId = crypto.randomUUID();
 
         // 1. Insert Order
         await conn.query(
             `INSERT INTO orders 
-       (id, user_id, user_email, user_name, user_phone, total_amount, status) 
-       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-            [orderId, user_id || null, user_email, user_name, user_phone || null, total_amount]
+       (id, user_id, user_email, user_name, user_phone, total_amount, status, req_total_amount) 
+       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+            [orderId, user_id || null, user_email, user_name, user_phone || null, total_amount, req_total_amount]
         );
 
         // 2. Process Items

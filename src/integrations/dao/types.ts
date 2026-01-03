@@ -60,6 +60,7 @@ export interface Order {
     approved_at: Date | null;
     approved_by: string | null;
     created_at: Date | null;
+    req_total_amount: number;
 }
 
 export interface OrderItem {

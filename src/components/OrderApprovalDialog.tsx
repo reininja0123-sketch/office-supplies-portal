@@ -8,7 +8,6 @@ import { Check, X, Minus, Plus, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { downloadRISPDF } from "@/utils/generateRISPDF";
 import { api, auth } from "@/lib/api";
-import { QuantitySelector } from "@/components/QuantitySelector";
 import { capitalizeFirstLetter } from "@/utils/common.ts";
 
 interface OrderItem {
@@ -32,6 +31,8 @@ interface Order {
     total_amount: number;
     status: string;
     created_at: string;
+    req_total_amount: number;
+    user_phone: string;
 }
 
 interface OrderApprovalDialogProps {
@@ -53,7 +54,7 @@ export function OrderApprovalDialog({
                                         order,
                                         open,
                                         onOpenChange,
-                                        onApprovalComplete,
+                                        onApprovalComplete
                                     }: OrderApprovalDialogProps) {
     const [isViewOnly, setViewOnly] = useState(false)
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -112,8 +113,10 @@ export function OrderApprovalDialog({
     const updateApprovalQuantity = (itemId: string, quantity: number) => {
         setItemApprovals((prev) =>
             prev.map((item) =>
+                // item.order_item_id === itemId
+                //     ? { ...item, approved_quantity: Math.max(0, Math.min(quantity, item.available_stock + item.requested_quantity)) }
                 item.order_item_id === itemId
-                    ? { ...item, approved_quantity: Math.max(0, Math.min(quantity, item.available_stock + item.requested_quantity)) }
+                    ? { ...item, approved_quantity: Math.max(0, Math.min(quantity, item.requested_quantity)) }
                     // Note: Logic above limits to available stock.
                     // Ideally, you can't give more than requested, so:
                     // Math.min(quantity, item.requested_quantity)
@@ -160,9 +163,9 @@ export function OrderApprovalDialog({
 
             // Determine Order Status
             let newStatus = "processing";
-            if (allRejected) newStatus = "cancelled";
+            if (allRejected) newStatus = "rejected";
             else if (someReduced) newStatus = "processing"; // Or 'partial_approval' if you add that status to DB enum
-            else newStatus = "approved"; // Or keep 'processing' if that is your flow
+            // else newStatus = "approved"; // Or keep 'processing' if that is your flow
 
             const user = auth.getUser();
             const approverName = user?.full_name || user?.email || "Admin";
@@ -244,7 +247,7 @@ export function OrderApprovalDialog({
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        Order Approval - {order.user_name}
+                        Order Approval
                         <Badge
                             className={
                                 order.status === "pending"
@@ -253,7 +256,9 @@ export function OrderApprovalDialog({
                                         ? "bg-blue-500"
                                         : order.status === "completed"
                                             ? "bg-green-500"
-                                            : ""
+                                            : order.status === "rejected"
+                                                ? "bg-red-500"
+                                                : ""
                             }
                         >
                             {capitalizeFirstLetter(order.status)}
@@ -265,8 +270,8 @@ export function OrderApprovalDialog({
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         {/* Order Details Header - Same as before */}
                         <div>
-                            <span className="text-muted-foreground">Customer:</span>{" "}
-                            <span className="font-medium">{order.user_name}</span>
+                            <span className="text-muted-foreground">Requester:</span>{" "}
+                            <span className="font-medium">{capitalizeFirstLetter(order.user_name)}</span>
                         </div>
                         <div>
                             <span className="text-muted-foreground">Email:</span>{" "}
@@ -280,7 +285,11 @@ export function OrderApprovalDialog({
                         </div>
                         <div>
                             <span className="text-muted-foreground">Original Total:</span>{" "}
-                            <span className="font-medium">₱{order.total_amount.toFixed(2)}</span>
+                            <span className="font-medium">₱{order.req_total_amount.toFixed(2)}</span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground">Phone no:</span>{" "}
+                            <span className="font-medium">{order.user_phone}</span>
                         </div>
                     </div>
 
@@ -305,17 +314,18 @@ export function OrderApprovalDialog({
                                 <TableRow>
                                     <TableHead>Product</TableHead>
                                     <TableHead className="text-center">Requested</TableHead>
-                                    <TableHead className="text-center">Available Stock</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                    <TableHead className="text-center" hidden={!isViewOnly}>Available Stock</TableHead>
                                     <TableHead className="text-center">Approved Qty</TableHead>
                                     <TableHead className="text-right">Line Total</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-center">Status</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {itemApprovals.map((item) => {
                                     const orderItem = orderItems.find((oi) => oi.id === item.order_item_id);
                                     const lineTotal = (orderItem?.price || 0) * item.approved_quantity;
-
+                                    const isInsufficient = item.available_stock < item.requested_quantity;
                                     // Stock logic: Stock available for assignment is Current Product Stock
                                     // But conceptually, the 'requested' amount is already reserved (deducted).
                                     // So we don't need to check stock unless we are *increasing* quantity (which we aren't).
@@ -332,53 +342,58 @@ export function OrderApprovalDialog({
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center">{item.requested_quantity}</TableCell>
-                                            <TableCell className="text-center">
-                                                {item.available_stock}
+                                            <TableCell className="text-right">
+                                                ₱{(orderItem?.price?.toFixed(2) * item.requested_quantity).toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-center" hidden={!isViewOnly}>
+                                                <span className={isInsufficient ? "text-destructive font-medium" : ""}>
+                                                            {item.available_stock}
+                                                    {isInsufficient && (
+                                                        <AlertTriangle className="inline ml-1 h-4 w-4" />
+                                                    )}
+                                                </span>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center justify-center gap-1">
-
-                                                    <QuantitySelector
-                                                        maxQuantity={item.requested_quantity}
-                                                        initValue={item.requested_quantity}
-                                                        onQuantityChange={(qty) => {
-                                                            console.log("TEST " + qty)
-                                                        }}
-                                                    />
-                                                    {/*<Button*/}
-                                                    {/*    variant="outline"*/}
-                                                    {/*    size="icon"*/}
-                                                    {/*    className="h-8 w-8"*/}
-                                                    {/*    onClick={() =>*/}
-                                                    {/*        updateApprovalQuantity(item.order_item_id, item.approved_quantity - 1)*/}
-                                                    {/*    }*/}
-                                                    {/*>*/}
-                                                    {/*    <Minus className="h-4 w-4" />*/}
-                                                    {/*</Button>*/}
-                                                    {/*<Input*/}
-                                                    {/*    type="number"*/}
-                                                    {/*    min={0}*/}
-                                                    {/*    max={item.requested_quantity}*/}
-                                                    {/*    value={item.approved_quantity}*/}
-                                                    {/*    onChange={(e) =>*/}
-                                                    {/*        updateApprovalQuantity(item.order_item_id, parseInt(e.target.value) || 0)*/}
-                                                    {/*    }*/}
-                                                    {/*    className="w-16 h-8 text-center"*/}
-                                                    {/*/>*/}
-                                                    {/*<Button*/}
-                                                    {/*    variant="outline"*/}
-                                                    {/*    size="icon"*/}
-                                                    {/*    className="h-8 w-8"*/}
-                                                    {/*    onClick={() =>*/}
-                                                    {/*        updateApprovalQuantity(item.order_item_id, item.approved_quantity + 1)*/}
-                                                    {/*    }*/}
-                                                    {/*>*/}
-                                                    {/*    <Plus className="h-4 w-4" />*/}
-                                                    {/*</Button>*/}
+                                                    {isViewOnly && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() =>
+                                                                updateApprovalQuantity(item.order_item_id, item.approved_quantity - 1)
+                                                            }
+                                                        >
+                                                            <Minus className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                        <Input
+                                                            type="number"
+                                                            min={0}
+                                                            max={item.requested_quantity}
+                                                            value={item.approved_quantity}
+                                                            disabled={!isViewOnly}
+                                                            onChange={(e) =>
+                                                                updateApprovalQuantity(item.order_item_id, parseInt(e.target.value) || 0)
+                                                            }
+                                                            className="w-16 h-8 text-center"
+                                                        />
+                                                    {isViewOnly && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() =>
+                                                                updateApprovalQuantity(item.order_item_id, item.approved_quantity + 1)
+                                                            }
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">₱{lineTotal.toFixed(2)}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="text-center">
                                                 <Badge
                                                     variant={
                                                         item.approved_quantity === 0
@@ -402,26 +417,37 @@ export function OrderApprovalDialog({
                         </Table>
                     )}
 
-                    <div className="flex justify-between items-center pt-4 border-t">
-                        <div className="text-lg font-semibold">
-                            New Total: ₱{calculateNewTotal().toFixed(2)}
+                    {isViewOnly && (
+                        <div className="flex justify-between items-center pt-4 border-t">
+                            <div className="text-lg font-semibold">
+                                New Total: ₱{calculateNewTotal().toFixed(2)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                Original: ₱{order.total_amount.toFixed(2)}
+                                {calculateNewTotal() < order.total_amount && (
+                                    <span className="text-destructive ml-2">
+                                        (₱{(order.total_amount - calculateNewTotal()).toFixed(2)} reduction)
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                            Original: ₱{order.total_amount.toFixed(2)}
-                            {calculateNewTotal() < order.total_amount && (
-                                <span className="text-destructive ml-2">
-                                    (₱{(order.total_amount - calculateNewTotal()).toFixed(2)} reduction)
-                                </span>
-                            )}
+                    )}
+
+                    {!isViewOnly && (
+                        <div className="flex justify-between items-center pt-4 border-t">
+                            <div className="text-lg font-semibold">
+                                {order.status === "completed" ? 'Approved' : ''} Total: ₱{order.total_amount.toFixed(2)}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
                 </div>
 
                 <DialogFooter className="gap-2">
 
                     {isViewOnly && (
                         <Button onClick={handleSubmit} disabled={submitting}>
-                            {submitting ? "Processing..." : "Confirm Approval"}
+                            {submitting ? "Processing..." : "Confirm Actions"}
                         </Button>
                     )}
                     <Button variant="outline" onClick={() => onOpenChange(false)}>

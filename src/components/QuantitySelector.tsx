@@ -6,15 +6,10 @@ import { Minus, Plus } from "lucide-react";
 interface QuantitySelectorProps {
   maxQuantity: number;
   onQuantityChange: (quantity: number) => void;
-  initValue?: number;
 }
 
-export const QuantitySelector = ({ maxQuantity, onQuantityChange, initValue }: QuantitySelectorProps) => {
+export const QuantitySelector = ({ maxQuantity, onQuantityChange }: QuantitySelectorProps) => {
   const [quantity, setQuantity] = useState(1);
-
-  console.log('initValue : ' + initValue);
-
-
 
   const handleIncrement = () => {
     if (quantity < maxQuantity) {
@@ -25,7 +20,7 @@ export const QuantitySelector = ({ maxQuantity, onQuantityChange, initValue }: Q
   };
 
   const handleDecrement = () => {
-    if (quantity > 0) {
+    if (quantity > 1) {
       const newQuantity = quantity - 1;
       setQuantity(newQuantity);
       onQuantityChange(newQuantity);
@@ -49,7 +44,7 @@ export const QuantitySelector = ({ maxQuantity, onQuantityChange, initValue }: Q
         variant="outline"
         size="icon"
         onClick={handleDecrement}
-        disabled={quantity == 0}
+        disabled={quantity <= 1}
       >
         <Minus className="h-4 w-4" />
       </Button>

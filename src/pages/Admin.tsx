@@ -189,7 +189,7 @@ const Admin = () => {
             image_url: formData.image_url,
             low_stock_threshold: parseInt(formData.low_stock_threshold),
             category_id: formData.category_id || null,
-            product_unit: formData.product_unit,
+            product_unit: formData.product_unit.toUpperCase(),
         };
 
         try {
@@ -551,13 +551,13 @@ const Admin = () => {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-4">
-                                                        <Label htmlFor="price">Units</Label>
+                                                        <Label htmlFor="unit">Units</Label>
                                                         <Input
                                                             id="unit"
                                                             required
                                                             value={formData.product_unit}
                                                             onChange={(e) =>
-                                                                setFormData({ ...formData, name: e.target.value })
+                                                                setFormData({ ...formData, product_unit: e.target.value })
                                                             }
                                                         />
                                                     </div>
@@ -718,7 +718,9 @@ const Admin = () => {
                                                                     ? "bg-blue-500"
                                                                     : order.status === "completed"
                                                                         ? "bg-green-500"
-                                                                        : ""
+                                                                        : order.status === "rejected"
+                                                                            ? "bg-red-500"
+                                                                            : ""
                                                         }
                                                     >
                                                         {capitalizeFirstLetter(order.status)}
@@ -1003,6 +1005,7 @@ const Admin = () => {
 
 
                 </Tabs>
+
                 <OrderApprovalDialog
                     order={selectedOrderForApproval}
                     open={approvalDialogOpen}
