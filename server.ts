@@ -25,6 +25,12 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
+const showDebugLog = async (label: string, str) =>  {
+    if (process.env.debug) {
+        console.log(label + " " + JSON.stringify(str, null, 2));
+    }
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -219,6 +225,9 @@ app.get('/user/:id/info', async (req: Request, res: Response) => {
       WHERE u.id = ?
       ORDER BY u.created_at DESC
     `;
+
+        showDebugLog("GET USER", {query: query.trim(), params: req.params });
+
         const rows = await conn.query(query, [userId]);
 
         const formattedRows = rows.map((row: any) => ({
@@ -484,26 +493,28 @@ app.post('/orders', async (req: Request, res: Response) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        const { user_email, user_name, user_phone, total_amount, items, user_id, req_total_amount } = req.body;
+        const { user_email, user_name, user_phone, total_amount, items, user_id, req_total_amount, reasons } = req.body;
         const orderId = crypto.randomUUID();
+        let query = `INSERT INTO orders 
+       (id, user_id, user_email, user_name, user_phone, total_amount, status, req_total_amount, requester_reasons) 
+       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`;
+        let params = [orderId, user_id || null, user_email, user_name, user_phone || null, total_amount, req_total_amount, reasons];
 
+        showDebugLog("INSERT ORDERS", {query, params});
+        
         // 1. Insert Order
-        await conn.query(
-            `INSERT INTO orders 
-       (id, user_id, user_email, user_name, user_phone, total_amount, status, req_total_amount) 
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
-            [orderId, user_id || null, user_email, user_name, user_phone || null, total_amount, req_total_amount]
-        );
+        await conn.query(query, params);
 
         // 2. Process Items
         for (const item of items) {
             const itemId = crypto.randomUUID();
 
+            query = "SELECT stock_quantity, price FROM products WHERE id = ?";
+            params = [item.product_id];
+
+            showDebugLog("CHECK STOCKS", {query, params});
             // Check stock availability
-            const [product] = await conn.query(
-                "SELECT stock_quantity, price FROM products WHERE id = ?",
-                [item.product_id]
-            );
+            const [product] = await conn.query(query, params);
 
             if (!product || product.stock_quantity < item.quantity) {
                 throw new Error(`Insufficient stock for product ID: ${item.product_id}`);
@@ -512,17 +523,21 @@ app.post('/orders', async (req: Request, res: Response) => {
             // Insert Order Item (Using price from DB for security)
             const itemPrice = product.price;
 
-            await conn.query(
-                `INSERT INTO order_items (id, order_id, product_id, quantity, price) 
-         VALUES (?, ?, ?, ?, ?)`,
-                [itemId, orderId, item.product_id, item.quantity, itemPrice]
-            );
 
+            query = `INSERT INTO order_items (id, order_id, product_id, quantity, price) 
+         VALUES (?, ?, ?, ?, ?)`;
+            params = [itemId, orderId, item.product_id, item.quantity, itemPrice];
+
+            showDebugLog("ADD ORDER_ITEMS", {query, params});
+
+            await conn.query(query,params);
+
+            query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?";
+            params = [item.quantity, item.product_id];
+
+            showDebugLog("UPDATE PRODUCTS", {query, params});
             // Deduct Stock
-            await conn.query(
-                "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
-                [item.quantity, item.product_id]
-            );
+            await conn.query(query, params);
         }
 
         await conn.commit();
@@ -555,6 +570,8 @@ app.get('/orders', async (req: Request, res: Response) => {
 
         query += " ORDER BY created_at DESC";
 
+        showDebugLog("GET ORDERS",{query, params});
+
         const rows = await conn.query(query, params);
         const orders: Order[] = rows.slice(0, rows.length);
         res.json(orders);
@@ -577,6 +594,8 @@ app.get('/orders/:id/items', async (req: Request, res: Response) => {
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
     `;
+        showDebugLog("GET ORDER ITEMS", {query, params: req.params});
+
         const rows = await conn.query(query, [req.params.id]);
 
         // Transform result to match Dashboard expected interface (nested products object)

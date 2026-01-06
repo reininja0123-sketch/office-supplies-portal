@@ -692,7 +692,7 @@ const Admin = () => {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Order ID</TableHead>
-                                            <TableHead>Customer</TableHead>
+                                            <TableHead>Requester</TableHead>
                                             <TableHead>Email</TableHead>
                                             <TableHead>Total</TableHead>
                                             <TableHead>Status</TableHead>

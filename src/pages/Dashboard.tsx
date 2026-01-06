@@ -74,9 +74,7 @@ const Dashboard = () => {
 
     const fetchOrders = async (currentUser: User, adminStatus: boolean) => {
         try {
-            // Build the query endpoint
-            // If admin, we fetch all orders. If user, we filter by their ID.
-            // We pass this context via query params for this simple local setup.
+
             const endpoint = adminStatus
                 ? '/orders'
                 : `/orders?user_id=${currentUser.id}`;

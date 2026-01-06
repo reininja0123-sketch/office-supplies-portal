@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { auth, api } from "@/lib/api";
@@ -28,6 +29,7 @@ const Checkout = () => {
         name: "",
         email: "",
         phone: "",
+        reasons: "",
     });
 
     const navigate = useNavigate();
@@ -50,7 +52,8 @@ const Checkout = () => {
         setFormData({
             name: userData.full_name,
             email: userData.email,
-            phone: ""
+            phone: "",
+            reasons: ""
         })
 
         const cartKey = `cart_${user.id}`;
@@ -87,7 +90,9 @@ const Checkout = () => {
                     product_id: item.product.id,
                     quantity: item.quantity
                 })),
-                req_total_amount: total
+                req_total_amount: total,
+                user_id: userId,
+                reasons: formData.reasons,
             });
 
             // Clear cart
@@ -164,13 +169,24 @@ const Checkout = () => {
                                         <Label htmlFor="phone">Phone Number</Label>
                                         <Input
                                             id="phone"
-                                            type="tel"
+                                            type="number"
                                             value={formData.phone}
                                             onChange={(e) =>
                                                 setFormData({ ...formData, phone: e.target.value })
                                             }
                                         />
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reasons">Purpose</Label>
+                                        <Textarea
+                                            id="reasons"
+                                            value={formData.reasons}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, reasons: e.target.value })
+                                            }
+                                        />
+                                    </div>
+
                                     <Button type="submit" className="w-full" size="lg" disabled={loading}>
                                         {loading ? "Placing Order..." : "Place Order"}
                                     </Button>

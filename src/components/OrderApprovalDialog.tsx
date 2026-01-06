@@ -33,6 +33,7 @@ interface Order {
     created_at: string;
     req_total_amount: number;
     user_phone: string;
+    requester_reasons: string;
 }
 
 interface OrderApprovalDialogProps {
@@ -75,6 +76,8 @@ export function OrderApprovalDialog({
         setLoading(true);
         try {
             const data: any[] = await api.get(`/orders/${order.id}/items`);
+
+            console.log(JSON.stringify(order))
 
             // Map API response to our interface
             const items = (data || []).map((item: any) => ({
@@ -285,11 +288,15 @@ export function OrderApprovalDialog({
                         </div>
                         <div>
                             <span className="text-muted-foreground">Original Total:</span>{" "}
-                            <span className="font-medium">₱{order.req_total_amount.toFixed(2)}</span>
+                            <span className="font-extrabold">₱{order.req_total_amount.toFixed(2)}</span>
                         </div>
                         <div>
                             <span className="text-muted-foreground">Phone no:</span>{" "}
                             <span className="font-medium">{order.user_phone}</span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground">Purpose:</span>{" "}
+                            <span className="font-bold">{order.requester_reasons}</span>
                         </div>
                     </div>
 
