@@ -23,7 +23,7 @@ Then ok
 
 bukas ka terminal kung saan nakalagay yung full_sql_pnac_sup.sql
 
-mysql -u root -p pnac_sup < full_sql_pnac_sup.sql
+mysql -u root -p pnac_sup < full_sql_pnac_sup_{latest date}.sql
 
 Then enter mo password ng database mo then check mo na
 
