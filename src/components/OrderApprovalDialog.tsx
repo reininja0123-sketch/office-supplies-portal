@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Check, X, Minus, Plus, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { downloadRISPDF } from "@/utils/generateRISPDF";
 import { api, auth } from "@/lib/api";
@@ -63,9 +64,14 @@ export function OrderApprovalDialog({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const { toast } = useToast();
+    const [isAddDisable, setIsAddDisable] = useState(false);
+    const [isLessDisable, setIsLessDisable] = useState(false);
+
 
     useEffect(() => {
         setViewOnly(false);
+        setIsAddDisable(true);
+        setIsLessDisable(false);
         if (order && open) {
             fetchOrderItems();
         }
@@ -114,18 +120,28 @@ export function OrderApprovalDialog({
     };
 
     const updateApprovalQuantity = (itemId: string, quantity: number) => {
-        setItemApprovals((prev) =>
-            prev.map((item) =>
-                // item.order_item_id === itemId
-                //     ? { ...item, approved_quantity: Math.max(0, Math.min(quantity, item.available_stock + item.requested_quantity)) }
-                item.order_item_id === itemId
-                    ? { ...item, approved_quantity: Math.max(0, Math.min(quantity, item.requested_quantity)) }
-                    // Note: Logic above limits to available stock.
-                    // Ideally, you can't give more than requested, so:
-                    // Math.min(quantity, item.requested_quantity)
-                    : item
-            )
-        );
+        setItemApprovals((prev) => {
+            let approved = 0;
+            let requested = 0;
+
+            const updated = prev.map((item) => {
+                if (item.order_item_id !== itemId) return item;
+
+                requested = item.requested_quantity;
+                approved = Math.max(0, Math.min(quantity, requested));
+
+                return {
+                    ...item,
+                    approved_quantity: approved,
+                };
+            });
+
+            // 🔒 Button disable logic
+            setIsLessDisable(approved === 0);
+            setIsAddDisable(approved >= requested);
+
+            return updated;
+        });
     };
 
     const approveAll = () => {
@@ -247,7 +263,7 @@ export function OrderApprovalDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         Order Approval
@@ -367,6 +383,7 @@ export function OrderApprovalDialog({
                                                             variant="outline"
                                                             size="icon"
                                                             className="h-8 w-8"
+                                                            disabled={isLessDisable}
                                                             onClick={() =>
                                                                 updateApprovalQuantity(item.order_item_id, item.approved_quantity - 1)
                                                             }
@@ -390,6 +407,7 @@ export function OrderApprovalDialog({
                                                             variant="outline"
                                                             size="icon"
                                                             className="h-8 w-8"
+                                                            disabled={isAddDisable}
                                                             onClick={() =>
                                                                 updateApprovalQuantity(item.order_item_id, item.approved_quantity + 1)
                                                             }
@@ -401,6 +419,7 @@ export function OrderApprovalDialog({
                                             </TableCell>
                                             <TableCell className="text-right">₱{lineTotal.toFixed(2)}</TableCell>
                                             <TableCell className="text-center">
+                                                <div className="inline-flex add-margin-right">
                                                 <Badge
                                                     variant={
                                                         item.approved_quantity === 0
@@ -416,6 +435,14 @@ export function OrderApprovalDialog({
                                                             ? "Reduced"
                                                             : "Full"}
                                                 </Badge>
+                                                </div>
+                                                <div className="inline-flex">
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select category (optional)" />
+                                                    </SelectTrigger>
+                                                </Select>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
