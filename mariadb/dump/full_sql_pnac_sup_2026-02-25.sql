@@ -1,9 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19-11.8.5-MariaDB, for Win64 (AMD64)
+-- MariaDB dump 10.19-11.8.6-MariaDB, for Win64 (AMD64)
 --
 -- Host: localhost    Database: pnac_sup
 -- ------------------------------------------------------
--- Server version	11.8.5-MariaDB
+-- Server version	11.8.6-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -15,14 +15,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
-
---
--- Current Database: `pnac_sup`
---
-
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `pnac_sup` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
-
-USE `pnac_sup`;
 
 --
 -- Table structure for table `app_reference`
@@ -44,9 +36,9 @@ CREATE TABLE `app_reference` (
 -- Dumping data for table `app_reference`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `app_reference` WRITE;
 /*!40000 ALTER TABLE `app_reference` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `app_reference` VALUES
 ('21a22827-cdff-11f0-a43b-4c2338ce70c4','app_title','Office Supplies Portal','2025-11-30 15:13:34',NULL),
 ('392173af-cdff-11f0-a43b-4c2338ce70c4','sign_in_title','Procurement Store','2025-11-30 15:14:13',NULL),
@@ -61,7 +53,8 @@ INSERT INTO `app_reference` VALUES
 ('4dc910bc-eb11-11f0-a334-4c2338ce70c4','reject_reason_option','Others','2026-01-06 15:06:37',NULL);
 /*!40000 ALTER TABLE `app_reference` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `audit`
@@ -85,16 +78,17 @@ CREATE TABLE `audit` (
 -- Dumping data for table `audit`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `audit` WRITE;
 /*!40000 ALTER TABLE `audit` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `audit` VALUES
 (1,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,admin,user','2025-12-01 08:13:45','00000000-0000-0000-0000-000000000001'),
 (2,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,user,admin','2025-12-01 08:13:59','00000000-0000-0000-0000-000000000001'),
 (3,'UPDATE','USER_ROLE','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95,admin,user','2025-12-01 08:14:12','00000000-0000-0000-0000-000000000001');
 /*!40000 ALTER TABLE `audit` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `categories`
@@ -117,9 +111,9 @@ CREATE TABLE `categories` (
 -- Dumping data for table `categories`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `categories` VALUES
 ('11111111-1111-1111-1111-111111111111','Electronics','Electronic devices','2025-11-22 11:00:27'),
 ('22222222-2222-2222-2222-222222222222','Accessories','Accessories and peripherals','2025-11-22 11:00:27'),
@@ -130,7 +124,8 @@ INSERT INTO `categories` VALUES
 ('db6a4fb1-03ab-4f86-ba15-3ff35d557424','Phone','test','2025-11-22 15:21:54');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Temporary table structure for view `get_admin_emails`
@@ -188,9 +183,9 @@ CREATE TABLE `order_items` (
 -- Dumping data for table `order_items`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `order_items` WRITE;
 /*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `order_items` VALUES
 ('03e539b6-ba6c-47fb-ab05-15f1957d410a','5c33e0c1-96ba-4d0c-b6db-ef1337b5f3dd','470d31ad-a03a-4d33-9fc0-469dd781a969',1,111.00,'2026-01-03 04:45:13','rejected',0,NULL),
 ('099d555f-566d-438d-a5b0-018ddc5f9110','2340cba9-67ac-4868-990f-80e826dd0813','4e2bd528-2fdf-4170-b8e5-beb29919a1b9',2,58.87,'2026-01-03 12:06:59','partial',1,NULL),
@@ -245,7 +240,8 @@ INSERT INTO `order_items` VALUES
 ('fb8f23ea-7876-4961-8244-709fe0190ad8','cd613ab5-f9e4-4732-9129-e64e53b9b206','4e2bd528-2fdf-4170-b8e5-beb29919a1b9',11,58.87,'2026-01-03 12:21:17','processing',11,NULL);
 /*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `orders`
@@ -281,9 +277,9 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `orders` VALUES
 ('0193b6f7-fd2a-4093-99ee-bab0e04ef92a','user@user.com','Ordinary user','09271234567',797.50,'pending','2026-01-06 15:15:38','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95',NULL,NULL,797.50,5,'Building Gaming Rig',NULL),
 ('0b07770d-20fd-4254-9334-3412b2a84a1a','user@user.com','Ordinary user','09271234567',18.00,'completed','2026-01-06 14:59:54','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','2026-01-06 15:28:56','798b75df-94c0-48cc-94e4-9e5f64befcf9',18.00,3,'Pambalot ng kanin',NULL),
@@ -314,7 +310,8 @@ INSERT INTO `orders` VALUES
 ('e60ee5ec-5f1b-405d-81e8-7be81bc35f48','user@user.com','Ordinary user','09271234567',0.00,'rejected','2026-01-06 13:55:28','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','2026-01-06 14:24:08','798b75df-94c0-48cc-94e4-9e5f64befcf9',360.00,0,'',NULL);
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -331,15 +328,15 @@ begin
 	DECLARE v_current_count INT;
     DECLARE v_report_id CHAR(36);
 
-    -- Find the ID of the currently active report
-    -- We use LIMIT 1 to ensure we only get a single ID
+    
+    
     SELECT ris_count, id INTO v_current_count, v_report_id
     FROM report_ris
     WHERE ris_active = 1
     LIMIT 1
     FOR UPDATE;
 
-    -- If an active report exists, update it using its specific ID
+    
     IF v_report_id IS NOT NULL then
     	SET v_current_count = v_current_count + 1;
     	SET NEW.ris_seq = v_current_count;
@@ -381,12 +378,13 @@ CREATE TABLE `product_variants` (
 -- Dumping data for table `product_variants`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `product_variants` WRITE;
 /*!40000 ALTER TABLE `product_variants` DISABLE KEYS */;
-set autocommit=0;
 /*!40000 ALTER TABLE `product_variants` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -439,9 +437,9 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `products` VALUES
 ('1a4944c3-cf22-4c70-b4bb-06313c6c2fae','CARTOLINA, ASSORTED COLORS','20 PCS. PER PACK',35.50,NULL,93,'03-02-0081',NULL,'2026-01-03 13:14:09','2026-01-06 14:24:17',23,'PACK'),
 ('32ec96b9-0311-4d2e-b34a-e363b00d2632','Monitor 74','Eco-friendly',84.35,'33333333-3333-3333-3333-333333333333',183,'MON4679',NULL,'2025-11-22 14:15:24','2026-01-06 15:15:38',30,'PIECE'),
@@ -458,7 +456,8 @@ INSERT INTO `products` VALUES
 ('d4fe2b64-7cb7-400e-83b3-da9e93961022','Router 28','Limited edition',612.40,'33333333-3333-3333-3333-333333333333',293,'ROU7026','','2025-11-22 14:15:24','2026-01-03 04:34:48',30,'PIECE');
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -501,16 +500,17 @@ CREATE TABLE `profiles` (
 -- Dumping data for table `profiles`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `profiles` WRITE;
 /*!40000 ALTER TABLE `profiles` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `profiles` VALUES
 ('00000000-0000-0000-0000-000000000001','supplyofficer@admin.com','System Admin','2025-11-30 12:14:03'),
 ('5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user@user.com','Ordinary user','2025-11-30 14:59:45'),
 ('798b75df-94c0-48cc-94e4-9e5f64befcf9','dummy@admin.com','C John','2025-11-30 14:33:41');
 /*!40000 ALTER TABLE `profiles` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `report_ris`
@@ -532,15 +532,16 @@ CREATE TABLE `report_ris` (
 -- Dumping data for table `report_ris`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `report_ris` WRITE;
 /*!40000 ALTER TABLE `report_ris` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `report_ris` VALUES
 ('00f29cbd-e8ac-11f0-a333-4c2338ce70c4','2026',5,1),
 ('350f860b-eb0b-11f0-a334-4c2338ce70c4','2027',0,0);
 /*!40000 ALTER TABLE `report_ris` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `storage_buckets`
@@ -563,14 +564,15 @@ CREATE TABLE `storage_buckets` (
 -- Dumping data for table `storage_buckets`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `storage_buckets` WRITE;
 /*!40000 ALTER TABLE `storage_buckets` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `storage_buckets` VALUES
 ('product-images','product-images',1,5242880,'image/jpeg,image/jpg,image/png,image/webp');
 /*!40000 ALTER TABLE `storage_buckets` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `storage_objects`
@@ -596,12 +598,13 @@ CREATE TABLE `storage_objects` (
 -- Dumping data for table `storage_objects`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `storage_objects` WRITE;
 /*!40000 ALTER TABLE `storage_objects` DISABLE KEYS */;
-set autocommit=0;
 /*!40000 ALTER TABLE `storage_objects` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `user_roles`
@@ -626,16 +629,17 @@ CREATE TABLE `user_roles` (
 -- Dumping data for table `user_roles`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `user_roles` WRITE;
 /*!40000 ALTER TABLE `user_roles` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `user_roles` VALUES
 ('0271fd84-cdfa-11f0-a43b-4c2338ce70c4','798b75df-94c0-48cc-94e4-9e5f64befcf9','admin','2025-11-30 15:09:05','2025-12-01 07:03:23'),
 ('33a666d8-cdfd-11f0-a43b-4c2338ce70c4','5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user','2025-11-30 15:09:05','2025-12-01 08:14:12'),
 ('b2c459a3-cde6-11f0-a43b-4c2338ce70c4','00000000-0000-0000-0000-000000000001','superadmin','2025-11-30 15:09:05','2025-11-30 15:09:05');
 /*!40000 ALTER TABLE `user_roles` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
 -- Table structure for table `users`
@@ -659,16 +663,17 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-set autocommit=0;
 INSERT INTO `users` VALUES
 ('00000000-0000-0000-0000-000000000001','supplyofficer@admin.com','System Admin','$2y$12$NAIGFw7h4BwIZKS.CZaDjOVyGIxIYi1li571ocK2PkWkPjX/0Lxie','2025-11-30 12:14:03'),
 ('5a71d5ed-97b6-4c3c-8aea-b7ee9c192e95','user@user.com','Ordinary user','$2y$12$wgoW9RSwZZUujw4ss.Woc.SXNFwnq2eobaiVqYc.qQVeRQB/WBkAq','2025-11-30 14:59:45'),
 ('798b75df-94c0-48cc-94e4-9e5f64befcf9','dummy@admin.com','C John','$2y$12$NAIGFw7h4BwIZKS.CZaDjOVyGIxIYi1li571ocK2PkWkPjX/0Lxie','2025-11-30 14:33:41');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
-commit;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -744,4 +749,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-01-06 23:36:57
+-- Dump completed on 2026-02-25 21:04:20
